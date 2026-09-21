@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.nx/
+.env
+.env.*
+!.env.example
+autoloop.log
+playwright-report/
+test-results/
