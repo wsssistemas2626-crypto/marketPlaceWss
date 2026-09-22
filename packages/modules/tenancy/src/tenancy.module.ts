@@ -16,8 +16,11 @@ import {
   type WorkforceProvisioningPort,
 } from './application/provision-tenant.js';
 import { TENANT_REGISTRY, type TenantRegistryPort } from './application/tenant-registry.js';
+import { AdminThemeController, StoreThemeController } from './http/theme.controller.js';
 import { PlatformTenantsController } from './http/platform-tenants.controller.js';
+import { ThemeService, THEME_REPOSITORY, type ThemeRepositoryPort } from './application/theme-service.js';
 import { DbConfigSource } from './infrastructure/db-config-source.js';
+import { DrizzleThemeRepository } from './infrastructure/drizzle-theme.repository.js';
 import { DbTenantDirectory } from './infrastructure/db-tenant-directory.js';
 import { DrizzleProvisioningSteps } from './infrastructure/drizzle-provisioning-steps.js';
 import { DrizzleTenantRegistry } from './infrastructure/drizzle-tenant-registry.js';
@@ -52,7 +55,7 @@ export class TenancyModule {
 
     return {
       module: TenancyModule,
-      controllers: [PlatformTenantsController],
+      controllers: [PlatformTenantsController, AdminThemeController, StoreThemeController],
       providers: [
         DbTenantDirectory,
         { provide: TENANT_DIRECTORY, useExisting: DbTenantDirectory },
@@ -61,6 +64,12 @@ export class TenancyModule {
         { provide: WORKFORCE_PROVISIONING, useClass: ClerkTenantProvisioning },
         { provide: TENANCY_EVENT_PUBLISHER, useClass: TenancyOutboxPublisher },
         { provide: TENANCY_TRANSACTION, useClass: TenancyTransaction },
+        { provide: THEME_REPOSITORY, useClass: DrizzleThemeRepository },
+        {
+          provide: ThemeService,
+          useFactory: (repository: ThemeRepositoryPort) => new ThemeService(repository),
+          inject: [THEME_REPOSITORY],
+        },
         {
           provide: TENANT_REGISTRY,
           useFactory: (pool: DatabasePool, directory: DbTenantDirectory) =>
@@ -116,6 +125,7 @@ export class TenancyModule {
         DbTenantDirectory,
         ProvisionTenant,
         CompleteProvisioning,
+        ThemeService,
       ],
     };
   }

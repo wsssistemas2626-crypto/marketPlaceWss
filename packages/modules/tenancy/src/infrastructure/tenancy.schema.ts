@@ -49,3 +49,11 @@ export const provisioningSteps = tenancySchema.table(
   },
   (table) => [primaryKey({ columns: [table.tenantId, table.step] })],
 );
+
+export const themes = tenancySchema.table('themes', {
+  tenantId: uuid('tenant_id').primaryKey(),
+  draft: jsonb('draft').notNull(),
+  published: jsonb('published'),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
