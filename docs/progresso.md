@@ -53,13 +53,13 @@
   Railway**: a seção B do checklist está pendente e não há credencial neste ambiente.
 
 ## Bloqueios e pendências
-- `pnpm db:migrate`, `pnpm gen:openapi` e `pnpm gen:sdk` existem como tarefas do Turborepo mas ainda não têm
-  implementação em nenhum pacote (chegam em US-004 e na Fase 1) — hoje passam sem executar nada.
-- Dockerfiles e `apps/<app>/railway.json` ficaram fora da US-001 de propósito: são da US-084.
+- **Checklist §B inteira** (conta Railway Pro, projeto, ambientes, CLI, serviços de dados, bootstrap de roles,
+  shared variables): sem isso o deploy da US-084 não pode ser executado. Runbook pronto em
+  `docs/runbooks/deploy.md`.
+- `pnpm gen:sdk` ainda é uma tarefa vazia do Turborepo — o cliente gerado é da Fase 1 (`packages/sdk`).
 - Testes que dependam da injeção de dependência do Nest precisarão de um transformador com
   `emitDecoratorMetadata` (SWC) no Vitest — hoje os testes exercitam as classes diretamente.
-- **Checklist §B inteira** (conta Railway Pro, projeto, ambientes, CLI, serviços de dados, bootstrap de roles,
-  shared variables): sem isso o deploy da US-084 não pode ser executado. Runbook pronto em .
+- A imagem da api tem ~874 MB (copia o `node_modules` do workspace podado). Reduzir fica para a US-086.
 - Checklist §A/§G: **CLERK_WEBHOOK_SIGNING_SECRET** e **CONSOLE_CLERK_WEBHOOK_SIGNING_SECRET** continuam pendentes
   (só existem depois de criar o endpoint no dashboard). Sem eles o adapter recusa webhooks — que é o comportamento
   correto. Proteção do branch `main` e branch `production` também seguem pendentes.
