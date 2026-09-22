@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   outputFileTracingRoot: monorepoRoot,
   reactStrictMode: true,
+  env: {
+    // a console autentica na aplicação Clerk "Console" (staff), separada da
+    // aplicação "Plataforma" usada por admin e seller-center (ADR-013)
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.CONSOLE_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '',
+    CLERK_SECRET_KEY: process.env.CONSOLE_CLERK_SECRET_KEY ?? '',
+  },
 };
 
 export default nextConfig;

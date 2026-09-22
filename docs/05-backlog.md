@@ -14,14 +14,14 @@ Marque `[x]` quando a story atender à Definition of Done do `CLAUDE.md`.
 - [x] **US-004 [ENABLER] Banco por módulo** (M) — Drizzle com um schema Postgres por módulo, migrações por módulo executadas por `pnpm db:migrate` **com o role `migrator`**, helper `createModuleSchema` conforme `infra/db/module-schema-template.sql`, entrypoint `dist/migrate.js` para o pre-deploy da Railway, teste que conecta com `DATABASE_URL` e falha se o role for superusuário ou tiver BYPASSRLS, helper de transação (Unit of Work) e Testcontainers para testes de integração.
 - [x] **US-005 [ENABLER] Outbox + Event Bus** (M) — tabela `outbox` por schema, gravação na mesma transação, relay no worker publicando no BullMQ, consumidores idempotentes (tabela `processed_events`), DLQ e reprocessamento. Envelope CloudEvents validado por Zod (ver `arquitetura/03-integracoes.md`).
   - *Aceite:* teste de integração prova que (1) rollback da transação não publica evento; (2) evento duplicado é processado uma só vez; (3) falha 5× vai para DLQ.
-- [ ] **US-006 [ENABLER] Observabilidade e erros** (P) — pino com redação de PII, OpenTelemetry, `correlation_id`, filtro de exceções → Problem Details (RFC 9457).
-- [ ] **US-007 [ENABLER] Idempotência e rate limit** (P) — interceptor `Idempotency-Key` (armazenamento 24 h em Redis/PG) e rate limit por IP/usuário/API key.
+- [x] **US-006 [ENABLER] Observabilidade e erros** (P) — pino com redação de PII, OpenTelemetry, `correlation_id`, filtro de exceções → Problem Details (RFC 9457).
+- [x] **US-007 [ENABLER] Idempotência e rate limit** (P) — interceptor `Idempotency-Key` (armazenamento 24 h em Redis/PG) e rate limit por IP/usuário/API key.
 - [ ] **US-008 [ENABLER] CI** (M) — GitHub Actions: lint, typecheck, boundaries, testes (Testcontainers com as roles de `infra/db/`), suíte de isolamento, build de todos os Dockerfiles, gitleaks, scan de dependências, geração/validação de OpenAPI; Lighthouse CI e axe no storefront (a partir da Fase 1). O status do workflow é o que a Railway espera ("Wait for CI").
-- [ ] **US-009 [ENABLER] Hub de configuração e registro de adapters** (M) — módulo `integrations` com registro de providers por categoria **e por tenant**, credenciais criptografadas, resolução do adapter ativo **em tempo de requisição a partir do TenantContext** (não é singleton global), adapters **fake/in-memory** de todas as ports para dev e testes. (RF-INT-01, RNF-MAN-03)
+- [x] **US-009 [ENABLER] Hub de configuração e registro de adapters** (M) — módulo `integrations` com registro de providers por categoria **e por tenant**, credenciais criptografadas, resolução do adapter ativo **em tempo de requisição a partir do TenantContext** (não é singleton global), adapters **fake/in-memory** de todas as ports para dev e testes. (RF-INT-01, RNF-MAN-03)
 
 ### Multi-tenancy na fundação (fazer ANTES de US-004/005 terminarem — tudo depende disso)
 
-### US-082 [ENABLER] — Integração com a Clerk (painéis)
+### US-082 [ENABLER] — Integração com a Clerk (painéis) ✅
 **Como** plataforma **eu quero** autenticar usuários de painel pela Clerk **para que** operadores e sellers tenham
 login seguro, MFA e organizações sem construirmos isso do zero. (ADR-013)
 ```gherkin
@@ -105,7 +105,7 @@ Cenário: tabela sem RLS
 Inclui: helper `enableTenantRls(table)` para migrações, role `app` sem BYPASSRLS, role `platform` restrito, `withTenantTx`, geração de números de pedido por tenant.
 
 - [x] **US-072 [ENABLER] Tenant em eventos, jobs, cache, storage e logs** (M) — `tenantid` obrigatório no envelope; consumidores abrem o contexto a partir do evento; decorator `@PlatformJob`; prefixos `t:{tenantId}` em Redis e `t/{tenantId}/` no storage; atributo `tenant.id` em logs/traces/métricas; concorrência de jobs e rate limit por tenant. Aceite: evento sem `tenantid` vai para DLQ; teste prova fairness entre dois tenants.
-- [ ] **US-073 [ENABLER] Configuração hierárquica e entitlements** (M) — `ConfigService` (plataforma → plano → tenant), `@RequiresModule`, verificação de limites do plano (RN-TEN-03). RF-TEN-05/08.
+- [x] **US-073 [ENABLER] Configuração hierárquica e entitlements** (M) — `ConfigService` (plataforma → plano → tenant), `@RequiresModule`, verificação de limites do plano (RN-TEN-03). RF-TEN-05/08.
 - [ ] **US-074 [ENABLER] Suíte de isolamento** (M) — harness que cria Tenant A e B com dados e, para cada rota registrada, prova que A não acessa B (listagem, leitura por ID, alteração, exclusão). Roda no CI; toda story nova herda automaticamente. RNF-TEN-01.
 - [ ] **US-075 [ENABLER] Módulo `tenancy` e app `console` (esqueleto)** (M) — tenants, domínios, planos, staff autenticado pela aplicação Clerk **Console** (MFA obrigatório, cadastro restrito por allowlist/convite), rotas `/v1/platform/*`, seed de 2 tenants de desenvolvimento (`loja-a.localhost`, `loja-b.localhost`).
 

@@ -1,3 +1,5 @@
+import { ClerkProvider } from '@clerk/nextjs';
+import { ptBR } from '@clerk/localizations';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -10,8 +12,10 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt-BR">
-      <body>{children}</body>
-    </html>
+    <ClerkProvider localization={ptBR}>
+      <html lang="pt-BR">
+        <body>{children}</body>
+      </html>
+    </ClerkProvider>
   );
 }

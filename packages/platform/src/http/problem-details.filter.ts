@@ -2,7 +2,7 @@ import { ArgumentsHost, Catch, type ExceptionFilter, HttpException, Logger } fro
 
 import { DomainError } from '@mkt/shared-kernel';
 
-import { TenantError } from '../tenancy/tenant-errors.js';
+import { currentCorrelationId } from '../observability/correlation-id.js';
 
 /** Erro HTTP no formato RFC 9457 (Problem Details), usado em toda a API. */
 export interface ProblemDetails {
@@ -12,6 +12,8 @@ export interface ProblemDetails {
   readonly detail?: string;
   readonly instance?: string;
   readonly code: string;
+  /** Liga a resposta ao log e ao trace (RNF-OBS-01). */
+  readonly correlation_id?: string;
   readonly [key: string]: unknown;
 }
 
@@ -21,10 +23,22 @@ const STATUS_BY_CODE: Record<string, number> = {
   invariant_violation: 409,
   conflict: 409,
   not_found: 404,
+  idempotency_key_required: 400,
+  idempotency_key_reused: 409,
+  idempotent_request_in_flight: 409,
+  rate_limit_exceeded: 429,
+  module_not_enabled: 403,
+  plan_limit_reached: 409,
+  config_key_not_found: 500,
 };
 
-const statusOf = (error: DomainError): number =>
-  error instanceof TenantError ? error.httpStatus : (STATUS_BY_CODE[error.code] ?? 400);
+/** Erro de domínio que já sabe o próprio status (tenancy, auth de painel). */
+const httpStatusOf = (error: DomainError): number | undefined => {
+  const candidate = (error as { httpStatus?: unknown }).httpStatus;
+  return typeof candidate === 'number' ? candidate : undefined;
+};
+
+const statusOf = (error: DomainError): number => httpStatusOf(error) ?? STATUS_BY_CODE[error.code] ?? 400;
 
 /** Resposta mínima de que o filtro precisa — evita acoplar ao Express. */
 interface ProblemResponse {
@@ -59,7 +73,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
   }
 
   private toProblem(exception: unknown, instance: string | undefined): ProblemDetails {
-    const base = instance === undefined ? {} : { instance };
+    const correlationId = currentCorrelationId();
+    const base = {
+      ...(instance === undefined ? {} : { instance }),
+      ...(correlationId === undefined ? {} : { correlation_id: correlationId }),
+    };
 
     if (exception instanceof DomainError) {
       const status = statusOf(exception);

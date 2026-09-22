@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 
 import {
   DEVELOPMENT_TENANTS,
@@ -18,6 +18,9 @@ import { TenantContextController } from './tenant-context.controller.js';
  * O registro em memória vale até a US-075 trazer o módulo `tenancy` com banco
  * e cache; trocar a implementação é trocar este provider.
  */
+// global: o registro de tenants é consultado por qualquer módulo que precise
+// resolver um tenant (identity, jobs), não só pelas rotas do storefront
+@Global()
 @Module({
   controllers: [TenantContextController],
   providers: [

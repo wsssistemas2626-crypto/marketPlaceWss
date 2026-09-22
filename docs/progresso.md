@@ -5,9 +5,9 @@
 
 ## Estado atual
 - **Fase:** 0 — Fundação
-- **Checkpoint atual:** C3
-- **Branch de trabalho:** `fase-0/c2-tenancy-banco-eventos`
-- **Próxima story:** US-006 (observabilidade e erros) — checkpoint C3
+- **Checkpoint atual:** C4
+- **Branch de trabalho:** `fase-0/c3-plataforma-clerk`
+- **Próxima story:** US-075 (módulo tenancy + console) — checkpoint C4
 - **Última atualização:** 2026-09-22
 
 ## Checkpoints da Fase 0
@@ -15,7 +15,7 @@
 |---|---|---|---|
 | C1 — Monorepo de pé | US-001, US-002, US-003 | ✅ | `fase-0/c1-monorepo` |
 | C2 — Tenancy, banco e eventos | US-070, US-004, US-071, US-005, US-072 | ✅ | `fase-0/c2-tenancy-banco-eventos` |
-| C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ⏳ | |
+| C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ✅ | `fase-0/c3-plataforma-clerk` |
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ⏳ | |
 | C5 — Railway (staging + PR) | US-084 | ⏳ | |
 
@@ -40,13 +40,20 @@
 - **US-005** — outbox transacional, relay com role `platform`, BullMQ com DLQ, consumidor idempotente.
 - **US-072** — @PlatformJob, fairness entre tenants, chaves `t:{id}` / `t/{id}/`, cota por tenant.
 
+- **US-006/US-007** — pino com redação de PII, correlation_id, OTel opcional, Idempotency-Key e rate limit.
+- **US-073** — ConfigService hierárquico, @RequiresModule e limites de plano.
+- **US-009** — hub de integrações por tenant, credenciais cifradas e fakes de todas as ports.
+- **US-082** — Clerk nos painéis: org_links como fonte da verdade do tenant, guards e webhook.
+
 ## Bloqueios e pendências
 - `pnpm db:migrate`, `pnpm gen:openapi` e `pnpm gen:sdk` existem como tarefas do Turborepo mas ainda não têm
   implementação em nenhum pacote (chegam em US-004 e na Fase 1) — hoje passam sem executar nada.
 - Dockerfiles e `apps/<app>/railway.json` ficaram fora da US-001 de propósito: são da US-084.
 - Testes que dependam da injeção de dependência do Nest precisarão de um transformador com
   `emitDecoratorMetadata` (SWC) no Vitest — hoje os testes exercitam as classes diretamente.
-- Checklist §A: proteção do branch `main`, branch `production` e webhooks da Clerk continuam pendentes com você.
+- Checklist §A/§G: **CLERK_WEBHOOK_SIGNING_SECRET** e **CONSOLE_CLERK_WEBHOOK_SIGNING_SECRET** continuam pendentes
+  (só existem depois de criar o endpoint no dashboard). Sem eles o adapter recusa webhooks — que é o comportamento
+  correto. Proteção do branch `main` e branch `production` também seguem pendentes.
 
 ## Decisões tomadas durante o desenvolvimento
 - **ADR-015 (Proposto)**: fronteiras verificadas com regras nativas do ESLint em vez de `eslint-plugin-boundaries`.
