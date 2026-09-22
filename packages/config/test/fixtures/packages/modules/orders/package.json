@@ -1,0 +1,13 @@
+{
+  "name": "@mkt/modules-orders",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@mkt/modules-catalog": "workspace:*",
+    "@mkt/shared-kernel": "workspace:*",
+    "pagarme": "^4.19.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.10"
+  }
+}

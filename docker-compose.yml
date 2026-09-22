@@ -1,0 +1,102 @@
+# Infraestrutura local — paridade com a Railway (ADR-014).
+# Uso: cp .env.example .env && docker compose up -d
+name: marketplace
+
+services:
+  postgres:
+    # mesma major da Railway; nunca :latest (PITR/HA exigem a imagem oficial com tag major)
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-marketplace}
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:-migrator}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-app}
+      DB_PLATFORM_PASSWORD: ${DB_PLATFORM_PASSWORD:-platform}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # local-init.sh roda no primeiro boot e cria as roles migrator/app/platform
+      - ./infra/db/local-init.sh:/docker-entrypoint-initdb.d/10-local-init.sh:ro
+      - ./infra/db:/bootstrap:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-marketplace}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # BullMQ exige noeviction (armadilha #4 de 07-infraestrutura-railway.md)
+    command: ['redis-server', '--maxmemory-policy', 'noeviction', '--appendonly', 'yes']
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.24
+    restart: unless-stopped
+    environment:
+      MEILI_MASTER_KEY: ${MEILISEARCH_MASTER_KEY:-dev-master-key}
+      MEILI_ENV: development
+    ports:
+      - '7700:7700'
+    volumes:
+      - meilisearch-data:/meili_data
+
+  mailpit:
+    image: axllent/mailpit:v1.28
+    restart: unless-stopped
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # UI
+    environment:
+      MP_MAX_MESSAGES: 500
+
+  minio:
+    # imagens do MinIO saíram do Docker Hub; a origem oficial hoje é a quay.io
+    image: quay.io/minio/minio:RELEASE.2025-07-23T15-54-02Z
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minio}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minio123}
+    ports:
+      - '9000:9000'
+      - '9001:9001' # console web
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # cria o bucket de mídia uma vez e sai (espelha o bucket `media` da Railway)
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-07-21T05-28-08Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - |
+        mc alias set local http://minio:9000 "${S3_ACCESS_KEY:-minio}" "${S3_SECRET_KEY:-minio123}" &&
+        mc mb --ignore-existing "local/${S3_BUCKET:-marketplace}"
+    restart: 'no'
+
+volumes:
+  postgres-data:
+  redis-data:
+  meilisearch-data:
+  minio-data:

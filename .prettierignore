@@ -1,0 +1,9 @@
+node_modules
+dist
+.next
+coverage
+.turbo
+pnpm-lock.yaml
+# documentação e kit de requisitos têm formatação própria (tabelas alinhadas à mão)
+docs/
+*.md
