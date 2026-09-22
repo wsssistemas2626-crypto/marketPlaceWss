@@ -10,12 +10,18 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
  */
 const isPublic = createRouteMatcher(['/sign-in(.*)', '/api/health']);
 
-export default clerkMiddleware(async (auth, request) => {
-  if (isPublic(request)) return;
+export default clerkMiddleware(
+  async (auth, request) => {
+    if (isPublic(request)) return;
 
-  const { userId } = await auth();
-  if (userId === null) await auth.protect();
-});
+    const { userId } = await auth();
+    if (userId === null) await auth.protect();
+  },
+  {
+    // o redirect do servidor não enxerga o `signInUrl` do ClerkProvider
+    signInUrl: '/sign-in',
+  },
+);
 
 export const config = {
   // tudo, menos arquivos estáticos e as rotas internas do Next

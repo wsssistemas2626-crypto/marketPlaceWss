@@ -79,11 +79,19 @@ Legenda: ☐ pendente · ◑ parcial (a coluna "Por quê" diz o que falta) · �
 
 | Instância | Configuração | Valor |
 |---|---|---|
-| Plataforma | `organization_settings.enabled` / `force_organization_selection` | `true` / `true` (orgs = tenants e sellers, ADR-013) |
+| Plataforma | `organization_settings.enabled` | `true` (orgs = tenants e sellers, ADR-013) |
+| Plataforma | `organization_settings.force_organization_selection` | `false` desde 2026-09-22 — ver a nota abaixo |
+| Plataforma | `organization_settings.slug_disabled` | `true` (padrão da instância): organização se identifica pelo `publicMetadata`, não por slug |
 | Plataforma | `organization_settings.max_allowed_memberships` | `0` (ilimitado) — o limite de membros é **entitlement de plano** no nosso `ConfigService`, não teto da Clerk |
 | Console | `auth_access_control.sign_up_mode` | `restricted` — staff entra **somente por convite** |
 | Console | `auth_access_control.block_disposable_email_domains` | `true` |
 | Console | `auth_multi_factor` | TOTP + backup codes, `required_for_sign_in: true` |
+
+> **Por que `force_organization_selection` voltou para `false`:** com ele ligado, a sessão de quem ainda não
+> escolheu organização fica *pendente*; o `auth()` do Next trata pendente como deslogado e o `auth.protect()`
+> devolve para o login, que vê a sessão válida e manda de volta — laço, tela em branco. Quem obriga a escolha
+> agora é o nosso middleware, que manda para `/organizacao` (a tela com o `OrganizationList`), e quem decide o
+> tenant continua sendo a API pelo `identity.org_links`.
 
 > A Clerk **não** permite `sign_up_mode: restricted` junto com `allowlist_enabled: true` — são modos mutuamente
 > exclusivos (a API aceita o patch e devolve `allowlist_enabled: false`). `restricted` é o mais forte dos dois e foi
