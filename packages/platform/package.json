@@ -27,5 +27,12 @@
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
     "vitest": "^4.0.10"
+  },
+  "dependencies": {
+    "@mkt/shared-kernel": "workspace:*",
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/core": "^11.1.6",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
   }
 }

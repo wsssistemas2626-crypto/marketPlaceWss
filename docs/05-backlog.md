@@ -57,7 +57,7 @@ customização do session token da Clerk com claims `org_kind`, `tenant_id`, `se
 middleware `clerkMiddleware` nos apps admin, seller-center e console; seed de organizações de desenvolvimento.
 *Fora de escopo:* login de compradores (US-010/011).
 
-### US-070 [ENABLER] — TenantContext e resolução do tenant
+### US-070 [ENABLER] — TenantContext e resolução do tenant ✅
 **Como** plataforma **eu quero** que toda requisição e job saiba a qual tenant pertence **para que** nenhum dado seja lido ou gravado no tenant errado.
 ```gherkin
 Cenário: resolução por host

@@ -8,6 +8,10 @@ export interface ApiEnv {
   readonly databaseUrl: string;
   readonly redisUrl: string;
   readonly nodeEnv: string;
+  /** Célula desta implantação (ADR-012). */
+  readonly cell: string;
+  /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
+  readonly edgeSharedSecret?: string;
 }
 
 function required(name: string): string {
@@ -39,5 +43,9 @@ export function loadApiEnv(): ApiEnv {
     databaseUrl: required('DATABASE_URL'),
     redisUrl: required('REDIS_URL'),
     nodeEnv: process.env.NODE_ENV ?? 'development',
+    cell: process.env.PLATFORM_CELL ?? 'shared-1',
+    ...(process.env.EDGE_SHARED_SECRET === undefined
+      ? {}
+      : { edgeSharedSecret: process.env.EDGE_SHARED_SECRET }),
   };
 }
