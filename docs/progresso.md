@@ -21,7 +21,7 @@
 
 ## Fase 1 — marco 1.0 (concluído)
 - **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação
-  real depende do domínio e da conta (checklist §C). Relatório em .
+  real depende do domínio e da conta (checklist §C). Relatório em `docs/spikes/US-085.md`.
 - **US-076** — provisionamento idempotente por etapas, orquestrado por evento, com seed confirmado pelos módulos.
 - **US-077** — tema do tenant (rascunho × publicado) aplicado no storefront.
 - **US-080** — suspensão com máquina de estados e modo suporte auditado, visível ao admin do tenant.

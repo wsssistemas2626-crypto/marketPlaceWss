@@ -4,7 +4,7 @@ O Claude Code trabalha sozinho **desde que** contas, chaves e decisões existam 
 Esta lista diz **o que**, **quem** faz e **até quando**. Itens de "Você" não podem ser feitos pelo agente
 (exigem cadastro, pagamento, contrato ou decisão de negócio).
 
-Legenda: ☐ pendente · ☑ feito
+Legenda: ☐ pendente · ◑ parcial (a coluna "Por quê" diz o que falta) · ☑ feito
 
 ## A. Antes da Fase 0 (antes de US-001)
 
@@ -15,8 +15,8 @@ Legenda: ☐ pendente · ☑ feito
 | ☐ | Proteção do branch `main` (PR + CI obrigatórios) | Você | GitHub → Settings → Branches | nada quebrado entra |
 | ☐ | Branch `production` criado a partir do `main` | Você | `git checkout -b production && git push -u origin production` | deploy de produção separado |
 | ☐ | Docker Desktop, Node LTS, pnpm, Git | Você | Guia Passo 1 | ambiente local |
-| ☐ | Clerk: apps **Plataforma** e **Console** (instâncias de desenvolvimento), Organizations ativado na Plataforma | Você | Guia Passo 6 | US-082 |
-| ☐ | `.env` local preenchido com chaves de dev da Clerk | Você | `cp .env.example .env` | US-082 |
+| ☑ | Clerk: apps **Plataforma** e **Console** (instâncias de desenvolvimento), Organizations ativado na Plataforma | Você | Guia Passo 6 | US-082 |
+| ◑ | `.env` local preenchido com chaves de dev da Clerk | Você | `cp .env.example .env` | US-082 — falta só o webhook secret das 2 apps (seção G) |
 | ☐ | `.claude/settings.json` revisado (permissões do agente) | Você | já vem no kit | menos interrupções, segredos protegidos |
 | ☐ | `docs/progresso.md` com suas instruções iniciais (opcional) | Você | seção "Instruções do humano" | orienta o modo autônomo |
 | ☐ | Decisão **D11** (conta de comprador isolada ou única) | Você | `docs/01-visao-produto.md` §8 | muda US-010 |
@@ -68,10 +68,31 @@ Legenda: ☐ pendente · ☑ feito
 | Recurso | Identificador | Observação |
 |---|---|---|
 | Repositório Git | https://github.com/wsssistemas2626-crypto/marketPlaceWss.git | branch principal `main`; produção em `production` |
-| Clerk — app **Plataforma** (instância de desenvolvimento) | `ins_3JdjOCSAXjtD5HOerVfEyCIEAWF` | ⚠️ confirmar se é da app Plataforma e se é instância de desenvolvimento |
-| Clerk — app **Console** | _pendente_ | criar (Guia Passo 6.2) |
+| Clerk — app **Plataforma** (`MARKET-PLACE`) | app `app_3JdjODM84APxXF6dL2ewdZNHU7V` | confirmado em 2026-09-22 via `clerk apps list` |
+| Clerk — Plataforma, instância de **desenvolvimento** | `ins_3JdjOCSAXjtD5HOerVfEyCIEAWF` | confirmado: `kid` do JWKS = este ID; host `blessed-python-4747.clerk.accounts.dev` |
+| Clerk — app **Console** (`Marketplace Console`) | app `app_3JgVPGBGAFELPrdSnwsWkcOgFUa` | já existia; reutilizada em vez de criar duplicata |
+| Clerk — Console, instância de **desenvolvimento** | `ins_3JgVPJdIRn3rMeMy13oKSJDJjct` | host `ace-ox-2680.clerk.accounts.dev` |
 | Clerk — instâncias de produção | _pendente_ | criar antes do go-live (seção E) |
 | Railway — projeto `marketplace` | _pendente_ | seção B |
+
+### Configuração aplicada nas instâncias de dev (2026-09-22, via `clerk config patch`)
+
+| Instância | Configuração | Valor |
+|---|---|---|
+| Plataforma | `organization_settings.enabled` / `force_organization_selection` | `true` / `true` (orgs = tenants e sellers, ADR-013) |
+| Plataforma | `organization_settings.max_allowed_memberships` | `0` (ilimitado) — o limite de membros é **entitlement de plano** no nosso `ConfigService`, não teto da Clerk |
+| Console | `auth_access_control.sign_up_mode` | `restricted` — staff entra **somente por convite** |
+| Console | `auth_access_control.block_disposable_email_domains` | `true` |
+| Console | `auth_multi_factor` | TOTP + backup codes, `required_for_sign_in: true` |
+
+> A Clerk **não** permite `sign_up_mode: restricted` junto com `allowlist_enabled: true` — são modos mutuamente
+> exclusivos (a API aceita o patch e devolve `allowlist_enabled: false`). `restricted` é o mais forte dos dois e foi
+> o escolhido, então a Console não usa allowlist. Convites: `clerk api /invitations -X POST`.
+
+**Pendente (só existe após criar o endpoint; não há API de leitura):** `CLERK_WEBHOOK_SIGNING_SECRET` e
+`CONSOLE_CLERK_WEBHOOK_SIGNING_SECRET`. Em **cada** app: Dashboard → **Configure** → **Webhooks** → **+ Add Endpoint**
+→ URL → assinar `user.*`, `organization.*`, `organizationMembership.*` → **Create** → copiar o **Signing Secret**
+(`whsec_…`) para o `.env`.
 
 O ID de instância (`ins_...`) só identifica a instância no dashboard e no suporte da Clerk; ele **não** substitui as
 chaves. Publishable key, secret key, JWT key e webhook secret continuam indo apenas no `.env` (local) e nas variáveis
