@@ -6,7 +6,7 @@
 ## Estado atual
 - **Fase:** 1 — MVP transacional
 - **Marco atual:** 1.0 — Tenancy de produto (concluído)
-- **Branch de trabalho:** `fase-1/m10-tenancy-de-produto`
+- **Branch de trabalho:** `fase-1/m10-tenancy-de-produto` (PR #6)
 - **Próxima story:** marco 1.1 — identidade (US-013, US-083, US-010, US-012, US-014)
 - **Última atualização:** 2026-09-22
 
@@ -19,7 +19,7 @@
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ CI verde | PR #4 |
 | C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` (PR #5) |
 
-## Fase 1 — marco 1.0 (concluído)
+## Fase 1 — marco 1.0 (concluído — PR #6)
 - **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação
   real depende do domínio e da conta (checklist §C). Relatório em `docs/spikes/US-085.md`.
 - **US-076** — provisionamento idempotente por etapas, orquestrado por evento, com seed confirmado pelos módulos.
