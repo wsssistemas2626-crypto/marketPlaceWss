@@ -6,8 +6,6 @@ import { DiscoveryService, NestFactory } from '@nestjs/core';
 
 import { audienceOf, listControllerRoutes, type RouteAudience } from '@mkt/platform';
 
-import { AppModule } from './app.module.js';
-
 /**
  * Gera `docs/api/openapi.json` (`pnpm gen:openapi`).
  *
@@ -45,7 +43,24 @@ const DESCRIPTION_BY_AUDIENCE: Record<RouteAudience, string> = {
   other: 'Infraestrutura.',
 };
 
+/**
+ * Gerar a especificação não pode exigir infraestrutura: o job de contrato do
+ * CI roda sem banco nem Redis. O composition root lê essas variáveis ao montar
+ * os módulos, então preenchemos valores inertes quando não existem — nenhuma
+ * conexão é aberta, porque o pool do Postgres e o cliente Redis são preguiçosos.
+ */
+function fillPlaceholdersForDocumentGeneration(): void {
+  process.env.DATABASE_URL ??= 'postgres://app:app@localhost:5432/openapi-generation';
+  process.env.REDIS_URL ??= 'redis://localhost:6379';
+}
+
 async function main(): Promise<void> {
+  fillPlaceholdersForDocumentGeneration();
+
+  // import dinâmico: o AppModule lê o ambiente ao ser carregado, então os
+  // valores inertes precisam já estar no lugar
+  const { AppModule } = await import('./app.module.js');
+
   // criar a aplicação não abre conexão: o pool do Postgres e o Redis são preguiçosos
   const application = await NestFactory.create(AppModule, { logger: false });
   application.setGlobalPrefix('v1', { exclude: ['health'] });
