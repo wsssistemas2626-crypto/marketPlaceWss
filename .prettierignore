@@ -4,6 +4,8 @@ dist
 coverage
 .turbo
 pnpm-lock.yaml
+# gerado pelo Next a cada build e marcado como "do not edit"
+next-env.d.ts
 # documentação e kit de requisitos têm formatação própria (tabelas alinhadas à mão)
 docs/
 *.md

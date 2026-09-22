@@ -28,14 +28,14 @@
     "@mkt/shared-kernel": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "drizzle-orm": "^0.45.2",
-    "zod": "^4.1.13",
-    "@mkt/adapters-fakes": "workspace:*"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.10"
+    "vitest": "^4.0.10",
+    "@mkt/adapters-fakes": "workspace:*"
   }
 }

@@ -1,4 +1,12 @@
-import { createPool, DEVELOPMENT_TENANTS, runWithTenant, withTenantTx, withTransaction } from '@mkt/platform';
+import { DbConfigSource } from '@mkt/modules-tenancy';
+import {
+  createPool,
+  DEVELOPMENT_PLANS,
+  DEVELOPMENT_TENANTS,
+  runWithTenant,
+  withTenantTx,
+  withTransaction,
+} from '@mkt/platform';
 
 import { loadApiEnv } from './env.js';
 
@@ -9,8 +17,9 @@ import { loadApiEnv } from './env.js';
  * vazio (ADR-014, armadilha #10), e localmente para ter algo com que trabalhar.
  * É idempotente: pode rodar quantas vezes quiser.
  *
- * Cria, para loja-a e loja-b: o vínculo de organização da Clerk (tenant e
- * seller) e um provedor `fake` ativo em cada categoria de integração.
+ * Cria: os planos de desenvolvimento, os tenants `loja-a` e `loja-b` com seus
+ * domínios, o vínculo de organização da Clerk (tenant e seller) e um provedor
+ * `fake` ativo em cada categoria de integração.
  */
 const ORG_SEED = DEVELOPMENT_TENANTS.flatMap((tenant, indice) => [
   {
@@ -37,11 +46,67 @@ const CATEGORIES = [
   'fiscal_issuer',
 ];
 
+/** O plano `platform-defaults` guarda os padrões da plataforma (US-073). */
+const PLANS = [
+  {
+    planId: DbConfigSource.PLATFORM_DEFAULTS_PLAN,
+    name: 'Padrões da plataforma',
+    entitlements: { modules: [], limits: {} },
+    settings: { 'orders.cancel_window_minutes': 15, 'ledger.payout_delay_days': 7 },
+  },
+  ...DEVELOPMENT_PLANS,
+];
+
 async function main(): Promise<void> {
   const env = loadApiEnv();
   const pool = createPool(env.databaseUrl, { max: 2, applicationName: 'marketplace-seed' });
 
   try {
+    for (const plano of PLANS) {
+      await withTransaction(pool, (client) =>
+        client.query(
+          `INSERT INTO tenancy.plans (plan_id, name, entitlements, settings)
+                VALUES ($1, $2, $3::jsonb, $4::jsonb)
+           ON CONFLICT (plan_id) DO UPDATE
+                  SET name = EXCLUDED.name,
+                      entitlements = EXCLUDED.entitlements,
+                      settings = EXCLUDED.settings`,
+          [plano.planId, plano.name, JSON.stringify(plano.entitlements), JSON.stringify(plano.settings)],
+        ),
+      );
+    }
+
+    for (const [indice, tenant] of DEVELOPMENT_TENANTS.entries()) {
+      const plano = DEVELOPMENT_PLANS[indice % DEVELOPMENT_PLANS.length];
+
+      await withTransaction(pool, (client) =>
+        client.query(
+          `INSERT INTO tenancy.tenants (id, slug, name, status, cell, plan_id)
+                VALUES ($1, $2, $3, 'active', $4, $5)
+           ON CONFLICT (id) DO UPDATE
+                  SET slug = EXCLUDED.slug, status = EXCLUDED.status, plan_id = EXCLUDED.plan_id`,
+          [
+            tenant.tenantId,
+            tenant.slug,
+            `Loja ${tenant.slug.slice(-1).toUpperCase()}`,
+            tenant.cell,
+            plano?.planId ?? null,
+          ],
+        ),
+      );
+
+      for (const hostname of tenant.hosts) {
+        await withTransaction(pool, (client) =>
+          client.query(
+            `INSERT INTO tenancy.domains (id, tenant_id, hostname, is_primary, verified_at)
+                  VALUES (gen_random_uuid(), $1, $2, $3, now())
+             ON CONFLICT (hostname) DO NOTHING`,
+            [tenant.tenantId, hostname, hostname.endsWith('.localhost')],
+          ),
+        );
+      }
+    }
+
     for (const link of ORG_SEED) {
       await withTransaction(pool, (client) =>
         client.query(
@@ -81,7 +146,8 @@ async function main(): Promise<void> {
     }
 
     console.log(
-      `Seed pronto: ${ORG_SEED.length} organizações e ${DEVELOPMENT_TENANTS.length * CATEGORIES.length} integrações fake.`,
+      `Seed pronto: ${PLANS.length} planos, ${DEVELOPMENT_TENANTS.length} tenants, ` +
+        `${ORG_SEED.length} organizações e ${DEVELOPMENT_TENANTS.length * CATEGORIES.length} integrações fake.`,
     );
   } finally {
     await pool.end();

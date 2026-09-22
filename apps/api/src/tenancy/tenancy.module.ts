@@ -1,9 +1,6 @@
-import { Global, MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 
 import {
-  DEVELOPMENT_TENANTS,
-  InMemoryTenantDirectory,
-  TENANT_DIRECTORY,
   TENANT_RESOLUTION_CONFIG,
   TenantContextMiddleware,
   type TenantResolutionConfig,
@@ -13,18 +10,14 @@ import { loadApiEnv } from '../env.js';
 import { TenantContextController } from './tenant-context.controller.js';
 
 /**
- * Resolução de tenant por host (ADR-012 / US-070).
+ * Resolução de tenant por host para as rotas do storefront (ADR-012 / US-070).
  *
- * O registro em memória vale até a US-075 trazer o módulo `tenancy` com banco
- * e cache; trocar a implementação é trocar este provider.
+ * O registro vem do módulo `tenancy` (US-075), que é global; aqui fica só o
+ * middleware e a configuração de célula/edge deste processo.
  */
-// global: o registro de tenants é consultado por qualquer módulo que precise
-// resolver um tenant (identity, jobs), não só pelas rotas do storefront
-@Global()
 @Module({
   controllers: [TenantContextController],
   providers: [
-    { provide: TENANT_DIRECTORY, useFactory: () => new InMemoryTenantDirectory(DEVELOPMENT_TENANTS) },
     {
       provide: TENANT_RESOLUTION_CONFIG,
       useFactory: (): TenantResolutionConfig => {
@@ -35,9 +28,9 @@ import { TenantContextController } from './tenant-context.controller.js';
       },
     },
   ],
-  exports: [TENANT_DIRECTORY, TENANT_RESOLUTION_CONFIG],
+  exports: [TENANT_RESOLUTION_CONFIG],
 })
-export class TenancyModule implements NestModule {
+export class StorefrontTenancyModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     // rotas com tenant vindo do host: comprador e API pública de integração
     consumer.apply(TenantContextMiddleware).forRoutes('store/*splat', 'public/*splat');

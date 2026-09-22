@@ -34,6 +34,9 @@
       "esbuild",
       "sharp",
       "unrs-resolver"
-    ]
+    ],
+    "overrides": {
+      "multer": "^2.3.0"
+    }
   }
 }

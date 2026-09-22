@@ -7,3 +7,4 @@ export * from './observability/index.js';
 export * from './messaging/index.js';
 export * from './http/index.js';
 export * from './tenancy/index.js';
+export * from './testing/index.js';

@@ -14,15 +14,20 @@ const IGNORED_SCHEMAS = ['pg_catalog', 'information_schema', 'pg_toast'];
 /**
  * Exceções **documentadas** ao RLS (`06-multi-tenancy.md` §3.3).
  *
- * `identity.org_links` é o mapa que descobre o tenant de uma organização da
- * Clerk: precisa ser lido antes de existir TenantContext, senão não haveria
- * como resolver o tenant. Por isso não tem policy — e por isso não guarda
- * nenhum dado de negócio, só o vínculo.
+ * `identity.org_links` e `tenancy.domains` são os mapas que descobrem o tenant
+ * (por organização da Clerk e por host): precisam ser lidos antes de existir
+ * TenantContext, senão não haveria como resolver o tenant. Por isso não têm
+ * policy — e por isso não guardam nenhum dado de negócio, só o vínculo.
  *
  * A lista é curta de propósito: cada item aqui é uma decisão revisada, não um
  * esquecimento. Tabela nova com `tenant_id` fora desta lista quebra o CI.
  */
-export const RLS_EXEMPT_TABLES: readonly string[] = ['identity.org_links'];
+export const RLS_EXEMPT_TABLES: readonly string[] = [
+  'identity.org_links',
+  // registro da plataforma: responde "que tenant atende este host?" antes de
+  // existir contexto. Sem dado de negócio, só o vínculo host → tenant.
+  'tenancy.domains',
+];
 
 /**
  * Lista tabelas que têm `tenant_id` mas **não** estão protegidas por RLS:
