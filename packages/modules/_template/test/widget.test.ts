@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { FixedClock, Id, Money, ValidationError } from '@mkt/shared-kernel';
 
 import { CreateWidget } from '../src/application/create-widget.js';
+import type { EventPublisherPort, TransactionPort } from '../src/application/ports.js';
 import type { WidgetRepositoryPort } from '../src/application/widget-repository.port.js';
 import { ListWidgets } from '../src/application/list-widgets.js';
 import { Widget } from '../src/domain/widget.js';
@@ -12,6 +13,17 @@ const TENANT = '0193a000-0000-7000-8000-00000000000a';
 
 const novoWidget = (slug = 'widget-um') =>
   Widget.create({ tenantId: TENANT, slug, name: 'Widget Um', price: Money.fromCents(1990) }, clock);
+
+/** Sem banco: roda o trabalho direto, como uma transação que sempre commita. */
+const transacaoDireta: TransactionPort = { run: (work) => work() };
+
+class PublicadorEmMemoria implements EventPublisherPort {
+  readonly eventos: { type: string; tenantId: string }[] = [];
+
+  async publish(event: { type: string; tenantId: string }): Promise<void> {
+    this.eventos.push({ type: event.type, tenantId: event.tenantId });
+  }
+}
 
 class RepositorioEmMemoria implements WidgetRepositoryPort {
   readonly salvos: Widget[] = [];
@@ -87,9 +99,10 @@ describe('Widget (domínio)', () => {
 });
 
 describe('CreateWidget (aplicação)', () => {
-  it('cria e persiste', async () => {
+  it('cria, persiste e publica o evento na mesma transação', async () => {
     const repositorio = new RepositorioEmMemoria();
-    const resultado = await new CreateWidget(repositorio, clock).execute({
+    const publicador = new PublicadorEmMemoria();
+    const resultado = await new CreateWidget(repositorio, transacaoDireta, publicador, clock).execute({
       tenantId: TENANT,
       slug: 'widget-um',
       name: 'Widget Um',
@@ -98,13 +111,15 @@ describe('CreateWidget (aplicação)', () => {
 
     expect(resultado.ok).toBe(true);
     expect(repositorio.salvos).toHaveLength(1);
+    expect(publicador.eventos).toEqual([{ type: 'template.widget.created', tenantId: TENANT }]);
   });
 
   it('devolve erro de conflito quando o slug já existe no tenant', async () => {
     const repositorio = new RepositorioEmMemoria();
+    const publicador = new PublicadorEmMemoria();
     await repositorio.save(novoWidget());
 
-    const resultado = await new CreateWidget(repositorio, clock).execute({
+    const resultado = await new CreateWidget(repositorio, transacaoDireta, publicador, clock).execute({
       tenantId: TENANT,
       slug: 'widget-um',
       name: 'Outro',
@@ -115,6 +130,8 @@ describe('CreateWidget (aplicação)', () => {
     if (!resultado.ok) {
       expect(resultado.error.code).toBe('conflict');
     }
+    // conflito não publica evento
+    expect(publicador.eventos).toEqual([]);
   });
 });
 
