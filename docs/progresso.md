@@ -84,6 +84,13 @@
 - **ADR-015 (Proposto)**: fronteiras verificadas com regras nativas do ESLint em vez de `eslint-plugin-boundaries`.
   O plugin 7.2.0 não acusou `@nestjs/common` dentro de `domain/` e a API nova não está documentada offline.
   **Precisa da sua aprovação** (ou da escolha por dependency-cruiser).
+- **Next.js não lê o `.env` da raiz**: em monorepo ele só procura dentro da pasta do app, então o storefront
+  subia sem `EDGE_SHARED_SECRET`, ignorava o `X-Forwarded-Host` e toda loja virava "Loja não encontrada".
+  Os 4 apps Next agora sobem por `scripts/with-env.mjs`, que carrega o `.env` da raiz antes do `next dev`.
+- **`turbo run dev --concurrency=20`**: são 16 tarefas persistentes (6 apps + 10 pacotes em watch) e o padrão 10
+  abortava o `pnpm dev` com "Invalid task configuration".
+- **`pnpm seed:dev`**: o `seed-dev.ts` existia mas não tinha script — agora está na api, no turbo e na raiz, e
+  publica um tema por loja de desenvolvimento (rosa na A, verde na B) para o white-label ser visível sem passo manual.
 - **pnpm 10.20.0** (não a 12.x): no Windows sem Developer Mode a 12.x falha ao criar symlinks
   (`os error 5`); a 10.x usa junctions e instala normalmente. Pinado em `packageManager`.
 - **Dev dos apps Nest com `nest start --watch`** (tsc) em vez de `tsx`: o esbuild não emite
