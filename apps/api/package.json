@@ -38,6 +38,11 @@
     "eslint": "^9.39.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.10"
+    "vitest": "^4.0.10",
+    "@nestjs/testing": "^11.1.6",
+    "@testcontainers/postgresql": "^11.7.1",
+    "@testcontainers/redis": "^11.7.1",
+    "supertest": "^7.1.4",
+    "@types/supertest": "^6.0.3"
   }
 }
