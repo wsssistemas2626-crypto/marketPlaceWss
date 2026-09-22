@@ -75,7 +75,7 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
     kind: OrganizationKind;
     tenantId: string;
     sellerId?: string;
-    /** Slug estável — deixa a organização localizável sem guardar o id. */
+    /** Slug — só quando a instância tem slugs habilitados; opcional na Clerk. */
     slug?: string;
     /** Dono inicial; sem ele a organização nasce sem nenhum membro. */
     createdBy?: string;
@@ -94,14 +94,49 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
     return { organizationId: organization.id };
   }
 
-  /** Busca por slug; `undefined` quando não existe (usado para ser idempotente). */
-  async findOrganizationBySlug(slug: string): Promise<{ organizationId: string; name: string } | undefined> {
-    const { data } = await this.client.organizations.getOrganizationList({ query: slug, limit: 100 });
-    const organization = data.find((candidate) => candidate.slug === slug);
+  /**
+   * Procura a organização de um tenant (ou de um seller) pelos metadados.
+   *
+   * A busca é pelo `publicMetadata`, não pelo slug: slug é opcional na Clerk e
+   * pode estar **desabilitado** na instância (`organization_slugs_disabled`),
+   * enquanto `tenantId`/`kind` sempre existem em organização criada por nós.
+   */
+  async findOrganizationByTenant(criterio: {
+    kind: OrganizationKind;
+    tenantId: string;
+    sellerId?: string;
+  }): Promise<{ organizationId: string; name: string } | undefined> {
+    const paginas = 5;
+    const porPagina = 100;
 
-    return organization === undefined
-      ? undefined
-      : { organizationId: organization.id, name: organization.name };
+    for (let pagina = 0; pagina < paginas; pagina += 1) {
+      const { data } = await this.client.organizations.getOrganizationList({
+        limit: porPagina,
+        offset: pagina * porPagina,
+      });
+
+      const encontrada = data.find((candidata) => {
+        const metadata = candidata.publicMetadata as {
+          kind?: string;
+          tenantId?: string;
+          sellerId?: string;
+        };
+
+        return (
+          metadata.kind === criterio.kind &&
+          metadata.tenantId === criterio.tenantId &&
+          metadata.sellerId === criterio.sellerId
+        );
+      });
+
+      if (encontrada !== undefined) {
+        return { organizationId: encontrada.id, name: encontrada.name };
+      }
+
+      if (data.length < porPagina) return undefined;
+    }
+
+    return undefined;
   }
 
   /** Garante que o usuário é membro da organização; já sendo, não faz nada. */

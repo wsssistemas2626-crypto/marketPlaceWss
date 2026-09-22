@@ -72,9 +72,8 @@ async function main(): Promise<void> {
   try {
     for (const [indice, tenant] of DEVELOPMENT_TENANTS.entries()) {
       const organizacoes = [
-        { slug: tenant.slug, name: tituloDaLoja(tenant.slug), kind: 'tenant' as const, sellerId: undefined },
+        { name: tituloDaLoja(tenant.slug), kind: 'tenant' as const, sellerId: undefined },
         {
-          slug: `${tenant.slug}-vendedor`,
           name: `${tituloDaLoja(tenant.slug)} — Vendedor`,
           kind: 'seller' as const,
           sellerId: sellerIdDe(indice),
@@ -82,14 +81,17 @@ async function main(): Promise<void> {
       ];
 
       for (const organizacao of organizacoes) {
-        const existente = await clerk.findOrganizationBySlug(organizacao.slug);
+        const existente = await clerk.findOrganizationByTenant({
+          kind: organizacao.kind,
+          tenantId: tenant.tenantId,
+          ...(organizacao.sellerId === undefined ? {} : { sellerId: organizacao.sellerId }),
+        });
         const { organizationId } =
           existente === undefined
             ? await clerk.createOrganization({
                 name: organizacao.name,
                 kind: organizacao.kind,
                 tenantId: tenant.tenantId,
-                slug: organizacao.slug,
                 createdBy: usuario.userId,
                 ...(organizacao.sellerId === undefined ? {} : { sellerId: organizacao.sellerId }),
               })
@@ -119,7 +121,7 @@ async function main(): Promise<void> {
         );
 
         console.log(
-          `  ${organizacao.slug.padEnd(18)} ${organizationId}  ${organizacao.kind}` +
+          `  ${organizacao.name.padEnd(24)} ${organizationId}  ${organizacao.kind}` +
             `${existente === undefined ? '  (criada)' : ''}` +
             `${associacao === 'created' ? '  (+ membro)' : ''}`,
         );
