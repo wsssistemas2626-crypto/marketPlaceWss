@@ -1,6 +1,8 @@
 import { Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
 
+import { IdentityModule } from '@mkt/modules-identity';
 import { TemplateModule } from '@mkt/modules-template';
+import { TenancyModule } from '@mkt/modules-tenancy';
 
 import {
   BullMqEventBus,
@@ -11,6 +13,7 @@ import {
 } from '@mkt/platform';
 
 import { loadWorkerEnv } from '../env.js';
+import { createWorkforceIdentity } from '../identity/identity.provider.js';
 import { EventConsumerService } from './event-consumer.service.js';
 import { OutboxRelayService } from './outbox-relay.service.js';
 
@@ -21,7 +24,16 @@ import { OutboxRelayService } from './outbox-relay.service.js';
  * processo usa o pool do role `app` (ADR-014 §3).
  */
 @Module({
-  imports: [TemplateModule],
+  imports: [
+    // o worker não autentica ninguém, mas o tenancy precisa do adapter de
+    // identidade para provisionar organizações
+    IdentityModule.register({
+      workforceIdentity: createWorkforceIdentity(),
+      consoleIdentity: createWorkforceIdentity(),
+    }),
+    TenancyModule.register({ seedModules: ['template'] }),
+    TemplateModule,
+  ],
   providers: [
     {
       provide: DATABASE_POOL_PLATFORM,

@@ -5,7 +5,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import {
   DATABASE_POOL,
   normalizeHost,
-  withTransaction,
+  useTransaction,
   type DatabasePool,
   type TenantStatus,
 } from '@mkt/platform';
@@ -37,7 +37,7 @@ export class DrizzleTenantRegistry implements TenantRegistryPort {
   ) {}
 
   private async hydrate(tenantId: string): Promise<TenantSummary> {
-    return withTransaction(this.pool, async (client) => {
+    return useTransaction(this.pool, async (client) => {
       const database = drizzle(client);
       const [tenant] = await database.select().from(tenants).where(eq(tenants.id, tenantId)).limit(1);
       if (tenant === undefined) throw new ConflictError('Tenant desapareceu durante a operação');
@@ -60,7 +60,7 @@ export class DrizzleTenantRegistry implements TenantRegistryPort {
   }
 
   async list(): Promise<TenantSummary[]> {
-    const rows = await withTransaction(this.pool, (client) =>
+    const rows = await useTransaction(this.pool, (client) =>
       drizzle(client).select({ id: tenants.id }).from(tenants).orderBy(tenants.slug),
     );
 
@@ -68,7 +68,7 @@ export class DrizzleTenantRegistry implements TenantRegistryPort {
   }
 
   async findBySlug(slug: string): Promise<TenantSummary | undefined> {
-    const [row] = await withTransaction(this.pool, (client) =>
+    const [row] = await useTransaction(this.pool, (client) =>
       drizzle(client).select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, slug)).limit(1),
     );
 
@@ -84,15 +84,15 @@ export class DrizzleTenantRegistry implements TenantRegistryPort {
     const tenantId = Id.create(this.clock);
     const hostname = normalizeHost(input.hostname ?? `${input.slug}.${this.rootDomain}`);
 
-    await withTransaction(this.pool, async (client) => {
+    await useTransaction(this.pool, async (client) => {
       const database = drizzle(client);
 
       await database.insert(tenants).values({
         id: tenantId,
         slug: input.slug,
         name: input.name,
-        // nasce em trial: já atende requisição, mas o ciclo de vida fica explícito
-        status: 'trial',
+        // o provisionamento começa em 'provisioning'; sem ele, 'trial'
+        status: input.status ?? 'trial',
         cell: 'shared-1',
         planId: input.planId ?? null,
       });
@@ -111,7 +111,7 @@ export class DrizzleTenantRegistry implements TenantRegistryPort {
   }
 
   async changeStatus(tenantId: string, status: TenantStatus): Promise<TenantSummary> {
-    await withTransaction(this.pool, (client) =>
+    await useTransaction(this.pool, (client) =>
       drizzle(client)
         .update(tenants)
         .set({ status, updatedAt: this.clock.now() })

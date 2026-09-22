@@ -54,6 +54,20 @@ export async function withTenantTx<T>(
 }
 
 /**
+ * Roda `work` na transação em andamento; se não houver, abre uma **sem**
+ * tenant. É o equivalente de `useTenantClient` para operações de plataforma
+ * (registro de tenants, provisionamento), que acontecem antes de existir
+ * TenantContext mas ainda precisam agrupar escrita e evento numa transação só.
+ */
+export async function useTransaction<T>(
+  pool: DatabasePool,
+  work: (client: DatabaseClient) => Promise<T>,
+): Promise<T> {
+  const client = currentTransaction();
+  return client === undefined ? withTransaction(pool, work) : work(client);
+}
+
+/**
  * Roda `work` na transação em andamento; se não houver, abre uma com o tenant
  * do contexto. É o que permite um caso de uso agrupar várias chamadas de
  * repositório (e o evento do outbox) em **uma** transação.

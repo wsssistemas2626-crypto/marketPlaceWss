@@ -11,6 +11,7 @@ import {
   type TransactionPort,
 } from './application/ports.js';
 import { WIDGET_REPOSITORY, type WidgetRepositoryPort } from './application/widget-repository.port.js';
+import { TenantCreatedHandler } from './events/tenant-created.handler.js';
 import { WidgetCreatedHandler } from './events/widget-created.handler.js';
 import { DrizzleWidgetRepository } from './infrastructure/drizzle-widget.repository.js';
 import { OutboxEventPublisher } from './infrastructure/outbox-event-publisher.js';
@@ -29,6 +30,7 @@ import { WidgetsController } from './http/widgets.controller.js';
     { provide: TRANSACTION, useClass: PgTransaction },
     { provide: EVENT_PUBLISHER, useClass: OutboxEventPublisher },
     WidgetCreatedHandler,
+    TenantCreatedHandler,
     {
       provide: CreateWidget,
       useFactory: (
@@ -44,6 +46,6 @@ import { WidgetsController } from './http/widgets.controller.js';
       inject: [WIDGET_REPOSITORY],
     },
   ],
-  exports: [WidgetCreatedHandler],
+  exports: [WidgetCreatedHandler, TenantCreatedHandler],
 })
 export class TemplateModule {}

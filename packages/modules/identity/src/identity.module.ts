@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
 import type { WorkforceIdentityPort } from '@mkt/contracts';
@@ -29,6 +29,10 @@ export interface IdentityModuleOptions {
  * resolução do hub depende do TenantContext, que só existe depois desta
  * autenticação.
  */
+// global: autenticação de painel e o vínculo organização→tenant são usados
+// por qualquer módulo que precise saber quem está chamando (tenancy, no
+// provisionamento; guards, nas rotas)
+@Global()
 @Module({})
 export class IdentityModule implements NestModule {
   static register(options: IdentityModuleOptions) {

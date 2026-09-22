@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ConsoleAuth } from '@mkt/modules-identity';
 import { NotFoundError, ValidationError } from '@mkt/shared-kernel';
 
+import { ProvisionTenant, type ProvisionTenantResult } from '../application/provision-tenant.js';
 import {
   TENANT_REGISTRY,
   type TenantRegistryPort,
@@ -11,6 +12,9 @@ import {
 } from '../application/tenant-registry.js';
 
 const provisionSchema = z.object({
+  // o e-mail do admin é obrigatório: tenant sem quem administre não serve
+  adminEmail: z.email(),
+  template: z.string().min(1).max(40).optional(),
   slug: z
     .string()
     .min(2)
@@ -34,7 +38,10 @@ const statusSchema = z.object({
 @Controller('platform/tenants')
 @ConsoleAuth()
 export class PlatformTenantsController {
-  constructor(@Inject(TENANT_REGISTRY) private readonly registry: TenantRegistryPort) {}
+  constructor(
+    @Inject(TENANT_REGISTRY) private readonly registry: TenantRegistryPort,
+    private readonly provisionTenant: ProvisionTenant,
+  ) {}
 
   @Get()
   async list(): Promise<{ data: TenantSummary[] }> {
@@ -49,8 +56,12 @@ export class PlatformTenantsController {
     return tenant;
   }
 
+  /**
+   * Provisiona um tenant (RF-TEN-01). Reexecutar com o mesmo slug retoma o
+   * que ficou pendente, em vez de duplicar — ver ProvisionTenant.
+   */
   @Post()
-  async provision(@Body() body: unknown): Promise<TenantSummary> {
+  async provision(@Body() body: unknown): Promise<ProvisionTenantResult> {
     const parsed = provisionSchema.safeParse(body);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
@@ -59,13 +70,15 @@ export class PlatformTenantsController {
       });
     }
 
-    const { slug, name, planId, hostname } = parsed.data;
+    const { slug, name, planId, hostname, adminEmail, template } = parsed.data;
 
-    return this.registry.provision({
+    return this.provisionTenant.execute({
       slug,
       name,
+      adminEmail,
       ...(planId === undefined ? {} : { planId }),
       ...(hostname === undefined ? {} : { hostname }),
+      ...(template === undefined ? {} : { template }),
     });
   }
 

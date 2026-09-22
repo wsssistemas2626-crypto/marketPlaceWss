@@ -17,4 +17,10 @@ export { nextTenantCounter } from './tenant-counters.js';
 export { TenantAwareRepository } from './tenant-aware.repository.js';
 export { createPool, type DatabaseClient, type DatabasePool, type PoolOptions } from './pool.js';
 export { DATABASE_POOL, DATABASE_POOL_PLATFORM, REDIS_CLIENT } from './tokens.js';
-export { currentTransaction, useTenantClient, withTenantTx, withTransaction } from './unit-of-work.js';
+export {
+  currentTransaction,
+  useTenantClient,
+  useTransaction,
+  withTenantTx,
+  withTransaction,
+} from './unit-of-work.js';

@@ -29,7 +29,8 @@
     "drizzle-orm": "^0.45.2",
     "zod": "^4.1.13",
     "@mkt/contracts": "workspace:*",
-    "@mkt/modules-identity": "workspace:*"
+    "@mkt/modules-identity": "workspace:*",
+    "@mkt/modules-tenancy": "workspace:*"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",

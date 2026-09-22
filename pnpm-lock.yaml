@@ -262,12 +262,24 @@ importers:
 
   apps/worker:
     dependencies:
+      '@mkt/adapters-fakes':
+        specifier: workspace:*
+        version: link:../../packages/adapters/fakes
+      '@mkt/adapters-identity-clerk':
+        specifier: workspace:*
+        version: link:../../packages/adapters/identity-clerk
       '@mkt/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@mkt/modules-identity':
+        specifier: workspace:*
+        version: link:../../packages/modules/identity
       '@mkt/modules-template':
         specifier: workspace:*
         version: link:../../packages/modules/_template
+      '@mkt/modules-tenancy':
+        specifier: workspace:*
+        version: link:../../packages/modules/tenancy
       '@mkt/platform':
         specifier: workspace:*
         version: link:../../packages/platform
@@ -454,6 +466,9 @@ importers:
       '@mkt/modules-identity':
         specifier: workspace:*
         version: link:../identity
+      '@mkt/modules-tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
       '@mkt/platform':
         specifier: workspace:*
         version: link:../../platform

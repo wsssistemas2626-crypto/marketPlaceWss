@@ -24,7 +24,7 @@ import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
     DiscoveryModule,
     InfrastructureModule,
     PlatformModule,
-    TenancyModule,
+    TenancyModule.register({ seedModules: ['template'] }),
     StorefrontTenancyModule,
     HealthModule,
     IntegrationsModule.register({

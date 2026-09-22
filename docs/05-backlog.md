@@ -159,7 +159,7 @@ relatório em `docs/spikes/US-085.md` com a conclusão (seguir / ajustar / alter
 
 - [ ] **US-083 — Seletor de organização e marca no painel** (P) — RF-IAM-15.
 
-### US-076 — Provisionar tenant
+### US-076 — Provisionar tenant ✅
 **Como** staff da plataforma **eu quero** criar um novo marketplace **para que** o cliente comece a operar.
 ```gherkin
 Cenário: provisionamento completo
