@@ -16,6 +16,33 @@ export interface ApiEnv {
   readonly cell: string;
   /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
   readonly edgeSharedSecret?: string;
+  /** Credenciais da Clerk (ADR-013). Ausentes = adapter fake em desenvolvimento. */
+  readonly clerk?: {
+    readonly secretKey: string;
+    readonly jwtKey?: string;
+    readonly authorizedParties: readonly string[];
+    readonly webhookSigningSecret?: string;
+  };
+}
+
+/** `sk_test_xxx` é o placeholder do `.env.example`: não vale como credencial. */
+function clerkFromEnv(): ApiEnv['clerk'] {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (secretKey === undefined || secretKey === '' || secretKey.startsWith('sk_test_xxx')) {
+    return undefined;
+  }
+
+  return {
+    secretKey,
+    ...(process.env.CLERK_JWT_KEY === undefined ? {} : { jwtKey: process.env.CLERK_JWT_KEY }),
+    authorizedParties: (process.env.CLERK_AUTHORIZED_PARTIES ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin !== ''),
+    ...(process.env.CLERK_WEBHOOK_SIGNING_SECRET === undefined
+      ? {}
+      : { webhookSigningSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET }),
+  };
 }
 
 function required(name: string): string {
@@ -41,6 +68,8 @@ function loadDotEnvFile(): void {
 
 export function loadApiEnv(): ApiEnv {
   loadDotEnvFile();
+  const clerk = clerkFromEnv();
+
   return {
     // A Railway injeta PORT; localmente cai no padrão (armadilha #2).
     port: Number(process.env.PORT ?? 3100),
@@ -59,5 +88,6 @@ export function loadApiEnv(): ApiEnv {
     ...(process.env.EDGE_SHARED_SECRET === undefined
       ? {}
       : { edgeSharedSecret: process.env.EDGE_SHARED_SECRET }),
+    ...(clerk === undefined ? {} : { clerk }),
   };
 }

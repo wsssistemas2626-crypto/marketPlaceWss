@@ -21,7 +21,7 @@ Marque `[x]` quando a story atender à Definition of Done do `CLAUDE.md`.
 
 ### Multi-tenancy na fundação (fazer ANTES de US-004/005 terminarem — tudo depende disso)
 
-### US-082 [ENABLER] — Integração com a Clerk (painéis)
+### US-082 [ENABLER] — Integração com a Clerk (painéis) ✅
 **Como** plataforma **eu quero** autenticar usuários de painel pela Clerk **para que** operadores e sellers tenham
 login seguro, MFA e organizações sem construirmos isso do zero. (ADR-013)
 ```gherkin

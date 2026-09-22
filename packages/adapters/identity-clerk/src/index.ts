@@ -1,0 +1,133 @@
+import { createClerkClient, verifyToken, type ClerkClient } from '@clerk/backend';
+import { Webhook } from 'svix';
+
+import type { OrganizationKind, VerifiedPanelToken, WorkforceIdentityPort } from '@mkt/contracts';
+
+export interface ClerkAdapterOptions {
+  readonly secretKey: string;
+  /** Chave pública da instância: permite verificar o token **sem rede**. */
+  readonly jwtKey?: string;
+  /** Origens aceitas no claim `azp` — bloqueia token de outra aplicação. */
+  readonly authorizedParties: readonly string[];
+  /** Segredo do endpoint de webhook (`whsec_…`). */
+  readonly webhookSigningSecret?: string;
+}
+
+interface SessionClaims {
+  sub?: string;
+  org_id?: string;
+  org_kind?: OrganizationKind;
+  org_role?: string;
+  org_permissions?: string[];
+  tenant_id?: string;
+  seller_id?: string;
+}
+
+/**
+ * Adapter da Clerk para identidade de painel (ADR-013).
+ *
+ * **Este é o único pacote que pode importar `@clerk/backend`** — fora dele,
+ * só os apps Next.js (CLAUDE.md §4.15), e o lint garante isso.
+ *
+ * As claims `org_kind`, `tenant_id` e `seller_id` vêm do template de sessão
+ * configurado na Clerk, a partir do `publicMetadata` da organização. Elas
+ * servem de atalho: quem decide o tenant de verdade é o `org_links` no nosso
+ * banco (ver `toPanelSession` no módulo identity).
+ */
+export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
+  private readonly client: ClerkClient;
+
+  constructor(private readonly options: ClerkAdapterOptions) {
+    this.client = createClerkClient({ secretKey: options.secretKey });
+  }
+
+  async verifyToken(token: string): Promise<VerifiedPanelToken> {
+    const claims = (await verifyToken(token, {
+      secretKey: this.options.secretKey,
+      ...(this.options.jwtKey === undefined ? {} : { jwtKey: this.options.jwtKey }),
+      authorizedParties: [...this.options.authorizedParties],
+    })) as SessionClaims;
+
+    if (claims.sub === undefined || claims.org_id === undefined) {
+      throw new Error('Token sem usuário ou sem organização ativa');
+    }
+
+    return {
+      userId: claims.sub,
+      organizationId: claims.org_id,
+      organizationKind: claims.org_kind ?? 'tenant',
+      ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
+      ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
+      roles: claims.org_role === undefined ? [] : [claims.org_role],
+      permissions: claims.org_permissions ?? [],
+    };
+  }
+
+  async createOrganization(input: {
+    name: string;
+    kind: OrganizationKind;
+    tenantId: string;
+    sellerId?: string;
+  }): Promise<{ organizationId: string }> {
+    const organization = await this.client.organizations.createOrganization({
+      name: input.name,
+      publicMetadata: {
+        kind: input.kind,
+        tenantId: input.tenantId,
+        ...(input.sellerId === undefined ? {} : { sellerId: input.sellerId }),
+      },
+    });
+
+    return { organizationId: organization.id };
+  }
+
+  async updateOrganizationMetadata(
+    organizationId: string,
+    metadata: Readonly<Record<string, unknown>>,
+  ): Promise<void> {
+    await this.client.organizations.updateOrganizationMetadata(organizationId, {
+      publicMetadata: metadata,
+    });
+  }
+
+  async inviteMember(input: { organizationId: string; email: string; role: string }): Promise<void> {
+    await this.client.organizations.createOrganizationInvitation({
+      organizationId: input.organizationId,
+      emailAddress: input.email,
+      role: input.role,
+    });
+  }
+
+  async listMemberships(userId: string): Promise<{ organizationId: string; role: string }[]> {
+    const { data } = await this.client.users.getOrganizationMembershipList({ userId });
+
+    return data.map((membership) => ({
+      organizationId: membership.organization.id,
+      role: membership.role,
+    }));
+  }
+
+  /**
+   * Valida a assinatura (svix) **antes** de olhar o conteúdo. Sem o segredo
+   * configurado, recusa: aceitar webhook não assinado seria deixar qualquer um
+   * remapear organizações.
+   */
+  async parseWebhook(
+    headers: Readonly<Record<string, string>>,
+    body: string,
+  ): Promise<{ type: string; data: Record<string, unknown> }> {
+    if (this.options.webhookSigningSecret === undefined) {
+      throw new Error('CLERK_WEBHOOK_SIGNING_SECRET não configurado');
+    }
+
+    const event = new Webhook(this.options.webhookSigningSecret).verify(body, {
+      'svix-id': headers['svix-id'] ?? '',
+      'svix-timestamp': headers['svix-timestamp'] ?? '',
+      'svix-signature': headers['svix-signature'] ?? '',
+    }) as { type: string; data: Record<string, unknown> };
+
+    return event;
+  }
+}
+
+export type { ClerkClient };

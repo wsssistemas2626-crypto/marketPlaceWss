@@ -3,7 +3,6 @@ import { ArgumentsHost, Catch, type ExceptionFilter, HttpException, Logger } fro
 import { DomainError } from '@mkt/shared-kernel';
 
 import { currentCorrelationId } from '../observability/correlation-id.js';
-import { TenantError } from '../tenancy/tenant-errors.js';
 
 /** Erro HTTP no formato RFC 9457 (Problem Details), usado em toda a API. */
 export interface ProblemDetails {
@@ -33,8 +32,13 @@ const STATUS_BY_CODE: Record<string, number> = {
   config_key_not_found: 500,
 };
 
-const statusOf = (error: DomainError): number =>
-  error instanceof TenantError ? error.httpStatus : (STATUS_BY_CODE[error.code] ?? 400);
+/** Erro de domínio que já sabe o próprio status (tenancy, auth de painel). */
+const httpStatusOf = (error: DomainError): number | undefined => {
+  const candidate = (error as { httpStatus?: unknown }).httpStatus;
+  return typeof candidate === 'number' ? candidate : undefined;
+};
+
+const statusOf = (error: DomainError): number => httpStatusOf(error) ?? STATUS_BY_CODE[error.code] ?? 400;
 
 /** Resposta mínima de que o filtro precisa — evita acoplar ao Express. */
 interface ProblemResponse {

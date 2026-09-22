@@ -23,7 +23,11 @@
     "rxjs": "^7.8.2",
     "@mkt/shared-kernel": "workspace:*",
     "@mkt/modules-template": "workspace:*",
-    "@mkt/modules-integrations": "workspace:*"
+    "@mkt/modules-integrations": "workspace:*",
+    "@mkt/modules-identity": "workspace:*",
+    "@mkt/adapters-identity-clerk": "workspace:*",
+    "@mkt/adapters-fakes": "workspace:*",
+    "@mkt/contracts": "workspace:*"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",

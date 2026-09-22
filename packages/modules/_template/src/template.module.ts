@@ -15,6 +15,7 @@ import { WidgetCreatedHandler } from './events/widget-created.handler.js';
 import { DrizzleWidgetRepository } from './infrastructure/drizzle-widget.repository.js';
 import { OutboxEventPublisher } from './infrastructure/outbox-event-publisher.js';
 import { PgTransaction } from './infrastructure/pg-transaction.js';
+import { SellerWidgetsController } from './http/seller-widgets.controller.js';
 import { WidgetsController } from './http/widgets.controller.js';
 
 /**
@@ -22,7 +23,7 @@ import { WidgetsController } from './http/widgets.controller.js';
  * adapter. O pool do banco vem do host (token `DATABASE_POOL`).
  */
 @Module({
-  controllers: [WidgetsController],
+  controllers: [WidgetsController, SellerWidgetsController],
   providers: [
     { provide: WIDGET_REPOSITORY, useClass: DrizzleWidgetRepository },
     { provide: TRANSACTION, useClass: PgTransaction },

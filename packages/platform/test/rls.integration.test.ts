@@ -2,7 +2,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { discoverMigrations, runMigrations } from '../src/database/migrations.js';
 import { createPool, type DatabasePool } from '../src/database/pool.js';
-import { describeRlsGaps, findTablesMissingTenantRls } from '../src/database/rls-coverage.js';
+import {
+  describeRlsGaps,
+  findTablesMissingTenantRls,
+  RLS_EXEMPT_TABLES,
+} from '../src/database/rls-coverage.js';
 import { nextTenantCounter } from '../src/database/tenant-counters.js';
 import { withTenantTx, withTransaction } from '../src/database/unit-of-work.js';
 import {
@@ -55,6 +59,14 @@ describe.skipIf(!dockerAvailable)('RLS e isolamento entre tenants (integração)
       const gaps = await findTablesMissingTenantRls(migratorPool);
 
       expect(gaps, describeRlsGaps(gaps)).toEqual([]);
+    });
+
+    it('a lista de exceções é curta e explícita (06-multi-tenancy.md §3.3)', async () => {
+      // org_links é o mapa que descobre o tenant: é lido antes de existir contexto
+      expect(RLS_EXEMPT_TABLES).toEqual(['identity.org_links']);
+
+      const semExcecoes = await findTablesMissingTenantRls(migratorPool, []);
+      expect(semExcecoes.map((gap) => `${gap.schema}.${gap.table}`)).toEqual(['identity.org_links']);
     });
 
     it('acusa uma tabela nova que esqueceu o RLS', async () => {

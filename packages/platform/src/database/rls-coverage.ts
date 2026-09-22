@@ -12,6 +12,19 @@ export interface RlsGap {
 const IGNORED_SCHEMAS = ['pg_catalog', 'information_schema', 'pg_toast'];
 
 /**
+ * Exceções **documentadas** ao RLS (`06-multi-tenancy.md` §3.3).
+ *
+ * `identity.org_links` é o mapa que descobre o tenant de uma organização da
+ * Clerk: precisa ser lido antes de existir TenantContext, senão não haveria
+ * como resolver o tenant. Por isso não tem policy — e por isso não guarda
+ * nenhum dado de negócio, só o vínculo.
+ *
+ * A lista é curta de propósito: cada item aqui é uma decisão revisada, não um
+ * esquecimento. Tabela nova com `tenant_id` fora desta lista quebra o CI.
+ */
+export const RLS_EXEMPT_TABLES: readonly string[] = ['identity.org_links'];
+
+/**
  * Lista tabelas que têm `tenant_id` mas **não** estão protegidas por RLS:
  * sem `ENABLE`, sem `FORCE` ou sem nenhuma policy.
  *
@@ -19,7 +32,10 @@ const IGNORED_SCHEMAS = ['pg_catalog', 'information_schema', 'pg_toast'];
  * migração nova que esqueça o RLS quebra o build em vez de virar vazamento
  * entre tenants meses depois.
  */
-export async function findTablesMissingTenantRls(pool: DatabasePool): Promise<RlsGap[]> {
+export async function findTablesMissingTenantRls(
+  pool: DatabasePool,
+  exemptTables: readonly string[] = RLS_EXEMPT_TABLES,
+): Promise<RlsGap[]> {
   const { rows } = await pool.query<RlsGap>(
     `SELECT n.nspname                AS schema,
             c.relname                AS table,
@@ -44,7 +60,7 @@ export async function findTablesMissingTenantRls(pool: DatabasePool): Promise<Rl
     [IGNORED_SCHEMAS],
   );
 
-  return rows;
+  return rows.filter((row) => !exemptTables.includes(`${row.schema}.${row.table}`));
 }
 
 /** Mensagem pronta para o log do CI. */
