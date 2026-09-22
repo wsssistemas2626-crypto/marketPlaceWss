@@ -19,7 +19,8 @@
     "ioredis": "^5.9.0",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "@mkt/shared-kernel": "workspace:*"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",

@@ -4,13 +4,13 @@ import type pg from 'pg';
 
 import type { HealthProbe } from '@mkt/platform';
 
-import { POSTGRES_POOL, REDIS_CLIENT } from '../infrastructure/infrastructure.module.js';
+import { DATABASE_POOL, REDIS_CLIENT } from '@mkt/platform';
 
 @Injectable()
 export class PostgresProbe implements HealthProbe {
   readonly name = 'database';
 
-  constructor(@Inject(POSTGRES_POOL) private readonly pool: pg.Pool) {}
+  constructor(@Inject(DATABASE_POOL) private readonly pool: pg.Pool) {}
 
   async check(): Promise<void> {
     await this.pool.query('select 1');

@@ -1,5 +1,5 @@
 {
-  "name": "@mkt/platform",
+  "name": "@mkt/modules-template",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "drizzle"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -21,22 +22,18 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@mkt/platform": "workspace:*",
+    "@mkt/shared-kernel": "workspace:*",
+    "@nestjs/common": "^11.1.6",
+    "drizzle-orm": "^0.45.2",
+    "zod": "^4.1.13"
+  },
   "devDependencies": {
     "@mkt/config": "workspace:*",
     "@types/node": "^24.10.1",
     "eslint": "^9.39.1",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.10",
-    "@types/pg": "^8.15.6",
-    "@testcontainers/postgresql": "^11.7.1"
-  },
-  "dependencies": {
-    "@mkt/shared-kernel": "workspace:*",
-    "@nestjs/common": "^11.1.6",
-    "@nestjs/core": "^11.1.6",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
-    "pg": "^8.16.3",
-    "drizzle-orm": "^0.45.2"
+    "vitest": "^4.0.10"
   }
 }

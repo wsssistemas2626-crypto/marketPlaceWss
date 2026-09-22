@@ -8,6 +8,8 @@ export interface ApiEnv {
   readonly databaseUrl: string;
   readonly redisUrl: string;
   readonly nodeEnv: string;
+  /** URL do role migrator; só existe onde as migrações rodam. */
+  readonly migratorUrl?: string;
   /** Célula desta implantação (ADR-012). */
   readonly cell: string;
   /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
@@ -44,6 +46,9 @@ export function loadApiEnv(): ApiEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv: process.env.NODE_ENV ?? 'development',
     cell: process.env.PLATFORM_CELL ?? 'shared-1',
+    ...(process.env.DATABASE_URL_MIGRATOR === undefined
+      ? {}
+      : { migratorUrl: process.env.DATABASE_URL_MIGRATOR }),
     ...(process.env.EDGE_SHARED_SECRET === undefined
       ? {}
       : { edgeSharedSecret: process.env.EDGE_SHARED_SECRET }),

@@ -7,7 +7,7 @@ import type { Redis } from 'ioredis';
 import { AppModule } from './app.module.js';
 import { loadWorkerEnv } from './env.js';
 import { assertRedisEvictionPolicy } from './infrastructure/assert-redis-eviction-policy.js';
-import { REDIS_CLIENT } from './infrastructure/infrastructure.module.js';
+import { REDIS_CLIENT } from '@mkt/platform';
 
 async function bootstrap(): Promise<void> {
   const env = loadWorkerEnv();

@@ -3,7 +3,12 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { ProblemDetailsFilter } from '@mkt/platform';
+import {
+  assertRuntimeRoleIsSafe,
+  DATABASE_POOL,
+  ProblemDetailsFilter,
+  type DatabasePool,
+} from '@mkt/platform';
 
 import { AppModule } from './app.module.js';
 import { loadApiEnv } from './env.js';
@@ -23,6 +28,9 @@ async function bootstrap(): Promise<void> {
   app.enableShutdownHooks();
 
   // PORT vem da Railway; escutar em `::` atende IPv4 e IPv6 (armadilha #2).
+  // o processo não sobe conectado com superusuário: isso desligaria a RLS (ADR-014, armadilha #1)
+  await assertRuntimeRoleIsSafe(app.get<DatabasePool>(DATABASE_POOL));
+
   await app.listen(env.port, '::');
 
   new Logger('Bootstrap').log(`api ouvindo em [::]:${env.port} (${env.nodeEnv})`);
