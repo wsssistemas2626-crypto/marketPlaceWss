@@ -13,6 +13,7 @@ import {
   createEventWorker,
   DATABASE_POOL,
   EVENT_BUS,
+  TenantFairScheduler,
   type DatabasePool,
   type EventBusPort,
 } from '@mkt/platform';
@@ -33,6 +34,8 @@ import { WidgetCreatedHandler } from '@mkt/modules-template';
 export class EventConsumerService implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(EventConsumerService.name);
   private worker: Worker | undefined;
+  /** Um tenant com fila enorme não pode ocupar todos os slots (US-072). */
+  private readonly scheduler = new TenantFairScheduler({ totalConcurrency: 8, maxPerTenant: 3 });
 
   constructor(
     @Inject(DATABASE_POOL) private readonly pool: DatabasePool,
@@ -62,7 +65,9 @@ export class EventConsumerService implements OnApplicationBootstrap, OnApplicati
       return;
     }
 
-    if (event.type === 'template.widget.created') {
+    await this.scheduler.run(event.tenantid, async () => {
+      if (event.type !== 'template.widget.created') return;
+
       const result = await consumeOnce(this.pool, event, WidgetCreatedHandler.handlerName, (consumed) =>
         this.widgetCreated.handle(consumed),
       );
@@ -70,6 +75,6 @@ export class EventConsumerService implements OnApplicationBootstrap, OnApplicati
       if (result.duplicate) {
         this.logger.debug(`evento ${event.id} já processado por ${WidgetCreatedHandler.handlerName}`);
       }
-    }
+    });
   }
 }

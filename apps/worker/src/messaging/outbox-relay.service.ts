@@ -8,6 +8,7 @@ import {
 
 import {
   DATABASE_POOL_PLATFORM,
+  PlatformJob,
   EVENT_BUS,
   relayOutboxBatch,
   type DatabasePool,
@@ -23,6 +24,7 @@ const OUTBOX_SCHEMAS = ['template'];
  * (CLAUDE.md §9). Ele não abre TenantContext — o consumidor é que restaura o
  * contexto a partir do `tenantid` do envelope.
  */
+@PlatformJob('varre o outbox de todos os tenants; o TenantContext é aberto pelo consumidor')
 @Injectable()
 export class OutboxRelayService implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(OutboxRelayService.name);
