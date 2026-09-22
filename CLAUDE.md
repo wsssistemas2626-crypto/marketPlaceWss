@@ -151,6 +151,7 @@ e `platform` (mesmas da Railway). O helper de migração segue `infra/db/module-
 pnpm install
 docker compose up -d            # infraestrutura local
 pnpm db:migrate                 # roda migrações de todos os módulos
+pnpm seed:dev                   # planos, tenants loja-a/loja-b, orgs, integrações fake e temas
 pnpm dev                        # api + worker + frontends
 pnpm test                       # unit + integração
 pnpm test:e2e                   # Playwright

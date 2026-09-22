@@ -47,6 +47,29 @@ const CATEGORIES = [
   'fiscal_issuer',
 ];
 
+/**
+ * Tema publicado de cada loja de desenvolvimento.
+ *
+ * Existe para que o white-label seja visível sem nenhum passo manual: as duas
+ * lojas rodam o mesmo código e se parecem diferentes porque a configuração é
+ * diferente (CLAUDE.md §9). Só entra se ainda não houver tema — um ajuste feito
+ * no admin não é sobrescrito por rodar o seed de novo.
+ */
+const THEMES: Record<string, Record<string, unknown>> = {
+  'loja-a': {
+    colors: { primary: '#e91e63', onPrimary: '#ffffff', surface: '#fff1f5' },
+    typography: { fontFamily: 'poppins', headingWeight: 800 },
+    shape: { radiusPx: 16, density: 'comfortable' },
+    brand: { storeName: 'Loja A' },
+  },
+  'loja-b': {
+    colors: { primary: '#0f766e', onPrimary: '#ffffff', surface: '#ecfdf5' },
+    typography: { fontFamily: 'lora', headingWeight: 600 },
+    shape: { radiusPx: 2, density: 'compact' },
+    brand: { storeName: 'Loja B' },
+  },
+};
+
 /** O plano `platform-defaults` guarda os padrões da plataforma (US-073). */
 const PLANS = [
   {
@@ -146,12 +169,28 @@ async function main(): Promise<void> {
             tenant.tenantId,
           );
         }
+
+        const tema = THEMES[tenant.slug];
+        if (tema !== undefined) {
+          await withTenantTx(
+            pool,
+            (client) =>
+              client.query(
+                `INSERT INTO tenancy.themes (tenant_id, draft, published, published_at)
+                      VALUES ($1, $2::jsonb, $2::jsonb, now())
+                 ON CONFLICT (tenant_id) DO NOTHING`,
+                [tenant.tenantId, JSON.stringify(tema)],
+              ),
+            tenant.tenantId,
+          );
+        }
       });
     }
 
     console.log(
       `Seed pronto: ${PLANS.length} planos, ${DEVELOPMENT_TENANTS.length} tenants, ` +
-        `${ORG_SEED.length} organizações e ${DEVELOPMENT_TENANTS.length * CATEGORIES.length} integrações fake.`,
+        `${ORG_SEED.length} organizações, ${DEVELOPMENT_TENANTS.length * CATEGORIES.length} integrações fake ` +
+        `e ${Object.keys(THEMES).length} temas publicados.`,
     );
   } finally {
     await pool.end();
