@@ -109,7 +109,7 @@ Inclui: helper `enableTenantRls(table)` para migrações, role `app` sem BYPASSR
 - [x] **US-074 [ENABLER] Suíte de isolamento** (M) — harness que cria Tenant A e B com dados e, para cada rota registrada, prova que A não acessa B (listagem, leitura por ID, alteração, exclusão). Roda no CI; toda story nova herda automaticamente. RNF-TEN-01.
 - [x] **US-075 [ENABLER] Módulo `tenancy` e app `console` (esqueleto)** (M) — tenants, domínios, planos, staff autenticado pela aplicação Clerk **Console** (MFA obrigatório, cadastro restrito por allowlist/convite), rotas `/v1/platform/*`, seed de 2 tenants de desenvolvimento (`loja-a.localhost`, `loja-b.localhost`).
 
-### US-084 [ENABLER] — Deploy na Railway (staging + ambientes de PR)
+### US-084 [ENABLER] — Deploy na Railway (staging + ambientes de PR) 🚧 (código pronto; falta a conta — checklist §B)
 **Como** time **eu quero** que cada merge vá para staging e cada PR ganhe um ambiente próprio **para que** tudo seja
 testável fora da máquina local. (ADR-014, `arquitetura/07-infraestrutura-railway.md`)
 ```gherkin
