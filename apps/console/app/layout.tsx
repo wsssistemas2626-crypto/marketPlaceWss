@@ -12,7 +12,7 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider localization={ptBR}>
+    <ClerkProvider localization={ptBR} signInUrl="/sign-in" afterSignOutUrl="/sign-in">
       <html lang="pt-BR">
         <body>{children}</body>
       </html>
