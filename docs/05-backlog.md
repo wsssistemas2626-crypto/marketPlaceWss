@@ -105,7 +105,7 @@ Cenário: tabela sem RLS
 Inclui: helper `enableTenantRls(table)` para migrações, role `app` sem BYPASSRLS, role `platform` restrito, `withTenantTx`, geração de números de pedido por tenant.
 
 - [x] **US-072 [ENABLER] Tenant em eventos, jobs, cache, storage e logs** (M) — `tenantid` obrigatório no envelope; consumidores abrem o contexto a partir do evento; decorator `@PlatformJob`; prefixos `t:{tenantId}` em Redis e `t/{tenantId}/` no storage; atributo `tenant.id` em logs/traces/métricas; concorrência de jobs e rate limit por tenant. Aceite: evento sem `tenantid` vai para DLQ; teste prova fairness entre dois tenants.
-- [ ] **US-073 [ENABLER] Configuração hierárquica e entitlements** (M) — `ConfigService` (plataforma → plano → tenant), `@RequiresModule`, verificação de limites do plano (RN-TEN-03). RF-TEN-05/08.
+- [x] **US-073 [ENABLER] Configuração hierárquica e entitlements** (M) — `ConfigService` (plataforma → plano → tenant), `@RequiresModule`, verificação de limites do plano (RN-TEN-03). RF-TEN-05/08.
 - [ ] **US-074 [ENABLER] Suíte de isolamento** (M) — harness que cria Tenant A e B com dados e, para cada rota registrada, prova que A não acessa B (listagem, leitura por ID, alteração, exclusão). Roda no CI; toda story nova herda automaticamente. RNF-TEN-01.
 - [ ] **US-075 [ENABLER] Módulo `tenancy` e app `console` (esqueleto)** (M) — tenants, domínios, planos, staff autenticado pela aplicação Clerk **Console** (MFA obrigatório, cadastro restrito por allowlist/convite), rotas `/v1/platform/*`, seed de 2 tenants de desenvolvimento (`loja-a.localhost`, `loja-b.localhost`).
 

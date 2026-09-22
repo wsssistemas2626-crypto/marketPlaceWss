@@ -28,6 +28,9 @@ const STATUS_BY_CODE: Record<string, number> = {
   idempotency_key_reused: 409,
   idempotent_request_in_flight: 409,
   rate_limit_exceeded: 429,
+  module_not_enabled: 403,
+  plan_limit_reached: 409,
+  config_key_not_found: 500,
 };
 
 const statusOf = (error: DomainError): number =>
