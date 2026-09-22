@@ -1,3 +1,4 @@
+import { CredentialCipher } from '@mkt/modules-integrations';
 import { DbConfigSource } from '@mkt/modules-tenancy';
 import {
   createPool,
@@ -60,6 +61,9 @@ const PLANS = [
 async function main(): Promise<void> {
   const env = loadApiEnv();
   const pool = createPool(env.databaseUrl, { max: 2, applicationName: 'marketplace-seed' });
+  // credencial de verdade (cifrada), não um texto qualquer: o adapter fake
+  // ignora o conteúdo, mas quem lê a configuração decifra de fato
+  const credenciaisFake = new CredentialCipher(env.integrationsEncryptionKey).encrypt({ apiKey: 'fake' });
 
   try {
     for (const plano of PLANS) {
@@ -135,9 +139,9 @@ async function main(): Promise<void> {
               client.query(
                 `INSERT INTO integrations.provider_configs
                         (id, tenant_id, category, provider, credentials_encrypted, settings, is_active)
-                 VALUES (gen_random_uuid(), $1, $2, 'fake', 'seed.seed.seed', '{}'::jsonb, true)
+                 VALUES (gen_random_uuid(), $1, $2, 'fake', $3, '{}'::jsonb, true)
                  ON CONFLICT (tenant_id, category, provider) DO NOTHING`,
-                [tenant.tenantId, category],
+                [tenant.tenantId, category, credenciaisFake],
               ),
             tenant.tenantId,
           );

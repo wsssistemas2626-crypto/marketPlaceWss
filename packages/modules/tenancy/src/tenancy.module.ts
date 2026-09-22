@@ -4,6 +4,11 @@ import { CONFIG_SOURCE, DATABASE_POOL, TENANT_DIRECTORY, type DatabasePool } fro
 import { SystemClock } from '@mkt/shared-kernel';
 
 import { ChangeTenantStatus } from './application/change-tenant-status.js';
+import {
+  TenantUsageProjection,
+  USAGE_PROJECTION,
+  type UsageProjectionPort,
+} from './application/tenant-usage.js';
 import { CompleteProvisioning } from './application/complete-provisioning.js';
 import {
   PROVISIONING_STEPS_REPOSITORY,
@@ -28,6 +33,8 @@ import {
 import { ThemeService, THEME_REPOSITORY, type ThemeRepositoryPort } from './application/theme-service.js';
 import { DbConfigSource } from './infrastructure/db-config-source.js';
 import { DrizzleSupportSessionRepository } from './infrastructure/drizzle-support-session.repository.js';
+import { DrizzleUsageProjection } from './infrastructure/drizzle-usage.repository.js';
+import { TenantUsageHandler } from './events/tenant-usage.handler.js';
 import { DrizzleThemeRepository } from './infrastructure/drizzle-theme.repository.js';
 import { DbTenantDirectory } from './infrastructure/db-tenant-directory.js';
 import { DrizzleProvisioningSteps } from './infrastructure/drizzle-provisioning-steps.js';
@@ -80,6 +87,13 @@ export class TenancyModule {
         { provide: TENANCY_TRANSACTION, useClass: TenancyTransaction },
         { provide: THEME_REPOSITORY, useClass: DrizzleThemeRepository },
         { provide: SUPPORT_SESSION_REPOSITORY, useClass: DrizzleSupportSessionRepository },
+        { provide: USAGE_PROJECTION, useClass: DrizzleUsageProjection },
+        {
+          provide: TenantUsageProjection,
+          useFactory: (projection: UsageProjectionPort) => new TenantUsageProjection(projection),
+          inject: [USAGE_PROJECTION],
+        },
+        TenantUsageHandler,
         {
           provide: SupportMode,
           useFactory: (repository: SupportSessionRepositoryPort) =>
@@ -158,6 +172,8 @@ export class TenancyModule {
         ThemeService,
         SupportMode,
         ChangeTenantStatus,
+        TenantUsageProjection,
+        TenantUsageHandler,
       ],
     };
   }

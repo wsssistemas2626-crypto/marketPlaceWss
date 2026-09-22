@@ -46,4 +46,17 @@ export class IntegrationHub {
   availableProviders(category: IntegrationCategory): string[] {
     return this.registry.providersOf(category);
   }
+
+  /**
+   * Saúde das integrações de um tenant, para o console (US-081).
+   *
+   * Recebe o tenant explicitamente porque quem pergunta é o staff, que não
+   * tem TenantContext — e o repositório aplica o filtro por RLS.
+   */
+  async healthOf(tenantId: string): Promise<{ category: string; provider: string }[]> {
+    const configs = await this.configs.listSummaries(tenantId);
+    return configs
+      .filter((config) => config.isActive)
+      .map((config) => ({ category: config.category, provider: config.provider }));
+  }
 }

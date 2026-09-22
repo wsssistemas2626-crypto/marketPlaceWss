@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Inject, Param, Patch, Post } from '@nestjs/common';
 import { z } from 'zod';
 
+import { IntegrationHub } from '@mkt/modules-integrations';
 import { ConsoleAuth } from '@mkt/modules-identity';
 import { NotFoundError, ValidationError } from '@mkt/shared-kernel';
 
 import { ChangeTenantStatus } from '../application/change-tenant-status.js';
+import { TenantUsageProjection, type TenantUsage } from '../application/tenant-usage.js';
 import { ProvisionTenant, type ProvisionTenantResult } from '../application/provision-tenant.js';
 import {
   TENANT_REGISTRY,
@@ -45,19 +47,34 @@ export class PlatformTenantsController {
     @Inject(TENANT_REGISTRY) private readonly registry: TenantRegistryPort,
     private readonly provisionTenant: ProvisionTenant,
     private readonly changeTenantStatus: ChangeTenantStatus,
+    private readonly usage: TenantUsageProjection,
+    private readonly integrations: IntegrationHub,
   ) {}
 
+  /** Linha da lista do console: tenant + uso + integrações ativas (RF-TEN-11). */
+  private async comUso(
+    tenant: TenantSummary,
+  ): Promise<TenantSummary & { usage: TenantUsage; integrations: { category: string; provider: string }[] }> {
+    const [usage, integrations] = await Promise.all([
+      this.usage.get(tenant.id),
+      this.integrations.healthOf(tenant.id),
+    ]);
+
+    return { ...tenant, usage, integrations };
+  }
+
   @Get()
-  async list(): Promise<{ data: TenantSummary[] }> {
-    return { data: await this.registry.list() };
+  async list(): Promise<{ data: Awaited<ReturnType<PlatformTenantsController['comUso']>>[] }> {
+    const tenants = await this.registry.list();
+    return { data: await Promise.all(tenants.map((tenant) => this.comUso(tenant))) };
   }
 
   @Get(':slug')
-  async bySlug(@Param('slug') slug: string): Promise<TenantSummary> {
+  async bySlug(@Param('slug') slug: string) {
     const tenant = await this.registry.findBySlug(slug);
     if (tenant === undefined) throw new NotFoundError('Tenant');
 
-    return tenant;
+    return this.comUso(tenant);
   }
 
   /**

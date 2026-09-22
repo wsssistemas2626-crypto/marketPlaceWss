@@ -1,5 +1,11 @@
 import type { IntegrationCategory } from '@mkt/contracts';
 
+export interface ProviderConfigSummary {
+  readonly category: IntegrationCategory;
+  readonly provider: string;
+  readonly isActive: boolean;
+}
+
 export interface ProviderConfigRecord {
   readonly id: string;
   readonly category: IntegrationCategory;
@@ -16,6 +22,12 @@ export interface ProviderConfigRecord {
 export interface ProviderConfigRepositoryPort {
   findActive(category: IntegrationCategory): Promise<ProviderConfigRecord | undefined>;
   list(): Promise<ProviderConfigRecord[]>;
+  /**
+   * Resumo por tenant, **sem decifrar credenciais** — é o que o console
+   * precisa para mostrar saúde de integrações (US-081). Decifrar segredo para
+   * responder 'qual provedor está ativo' seria trabalho e risco à toa.
+   */
+  listSummaries(tenantId: string): Promise<ProviderConfigSummary[]>;
   upsert(input: Omit<ProviderConfigRecord, 'id'> & { id?: string }): Promise<ProviderConfigRecord>;
   deactivate(category: IntegrationCategory, provider: string): Promise<void>;
 }

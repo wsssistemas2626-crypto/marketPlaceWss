@@ -3,12 +3,13 @@ import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 
 import type { IntegrationCategory } from '@mkt/contracts';
-import { DATABASE_POOL, TenantAwareRepository, type DatabasePool } from '@mkt/platform';
+import { DATABASE_POOL, TenantAwareRepository, useTransaction, type DatabasePool } from '@mkt/platform';
 import { Id, SystemClock } from '@mkt/shared-kernel';
 
 import type {
   ProviderConfigRecord,
   ProviderConfigRepositoryPort,
+  ProviderConfigSummary,
 } from '../application/provider-config.port.js';
 import { CredentialCipher } from './credential-cipher.js';
 import { providerConfigs } from './provider-config.schema.js';
@@ -72,6 +73,34 @@ export class DrizzleProviderConfigRepository
     return this.withTenant(async (client) => {
       const rows = await drizzle(client).select().from(providerConfigs);
       return rows.map((row) => this.toRecord(row));
+    });
+  }
+
+  /**
+   * Resumo de um tenant informado, **sem tocar nas credenciais** (US-081).
+   *
+   * O console só precisa saber qual provedor está ativo em cada categoria.
+   * Decifrar segredo para responder isso seria trabalho e risco à toa — e foi
+   * o que quebrou na primeira versão, quando uma credencial de seed inválida
+   * derrubou a listagem inteira.
+   */
+  async listSummaries(tenantId: string): Promise<ProviderConfigSummary[]> {
+    return useTransaction(this.pool, async (client) => {
+      await client.query('SELECT set_config($1, $2, true)', ['app.tenant_id', tenantId]);
+
+      const rows = await drizzle(client)
+        .select({
+          category: providerConfigs.category,
+          provider: providerConfigs.provider,
+          isActive: providerConfigs.isActive,
+        })
+        .from(providerConfigs);
+
+      return rows.map((row) => ({
+        category: row.category as IntegrationCategory,
+        provider: row.provider,
+        isActive: row.isActive,
+      }));
     });
   }
 

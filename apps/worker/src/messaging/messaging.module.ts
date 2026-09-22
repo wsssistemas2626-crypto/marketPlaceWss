@@ -1,6 +1,7 @@
 import { Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
 
 import { IdentityModule } from '@mkt/modules-identity';
+import { IntegrationsModule } from '@mkt/modules-integrations';
 import { TemplateModule } from '@mkt/modules-template';
 import { TenancyModule } from '@mkt/modules-tenancy';
 
@@ -14,6 +15,7 @@ import {
 
 import { loadWorkerEnv } from '../env.js';
 import { createWorkforceIdentity } from '../identity/identity.provider.js';
+import { createAdapterRegistry } from '../integrations/adapter-registry.provider.js';
 import { EventConsumerService } from './event-consumer.service.js';
 import { OutboxRelayService } from './outbox-relay.service.js';
 
@@ -30,6 +32,11 @@ import { OutboxRelayService } from './outbox-relay.service.js';
     IdentityModule.register({
       workforceIdentity: createWorkforceIdentity(),
       consoleIdentity: createWorkforceIdentity(),
+    }),
+    // o tenancy consulta a saúde das integrações para o console
+    IntegrationsModule.register({
+      encryptionKey: loadWorkerEnv().integrationsEncryptionKey,
+      registry: createAdapterRegistry(),
     }),
     TenancyModule.register({ seedModules: ['template'] }),
     TemplateModule,

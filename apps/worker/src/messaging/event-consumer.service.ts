@@ -18,8 +18,14 @@ import {
   type EventBusPort,
 } from '@mkt/platform';
 import { TenantCreatedHandler, WidgetCreatedHandler } from '@mkt/modules-template';
+import { TenantUsageHandler } from '@mkt/modules-tenancy';
 
-/** Roteamento evento → handler. Módulo novo entra somando uma linha. */
+/**
+ * Roteamento evento → handler. Módulo novo entra somando uma linha.
+ *
+ * A projeção de uso (US-081) assina vários tipos, então entra em separado: um
+ * mesmo evento pode ter mais de um interessado.
+ */
 const HANDLERS: Record<
   string,
   { name: string; handle: (service: EventConsumerService, event: CloudEvent) => Promise<void> }
@@ -57,6 +63,7 @@ export class EventConsumerService implements OnApplicationBootstrap, OnApplicati
     @Inject(EVENT_BUS) private readonly bus: EventBusPort,
     readonly widgetCreatedHandler: WidgetCreatedHandler,
     readonly tenantCreatedHandler: TenantCreatedHandler,
+    readonly usageHandler: TenantUsageHandler,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -83,14 +90,21 @@ export class EventConsumerService implements OnApplicationBootstrap, OnApplicati
 
     await this.scheduler.run(event.tenantid, async () => {
       const handler = HANDLERS[event.type];
-      if (handler === undefined) return;
+      if (handler !== undefined) {
+        const result = await consumeOnce(this.pool, event, handler.name, (consumed) =>
+          handler.handle(this, consumed),
+        );
 
-      const result = await consumeOnce(this.pool, event, handler.name, (consumed) =>
-        handler.handle(this, consumed),
-      );
+        if (result.duplicate) {
+          this.logger.debug(`evento ${event.id} já processado por ${handler.name}`);
+        }
+      }
 
-      if (result.duplicate) {
-        this.logger.debug(`evento ${event.id} já processado por ${handler.name}`);
+      // projeção de uso do console: assina os eventos que movem contadores
+      if (TenantUsageHandler.observedEventTypes.includes(event.type)) {
+        await consumeOnce(this.pool, event, TenantUsageHandler.handlerName, (consumed) =>
+          this.usageHandler.handle(consumed),
+        );
       }
     });
   }

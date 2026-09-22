@@ -27,7 +27,8 @@
     "@mkt/modules-tenancy": "workspace:*",
     "@mkt/modules-identity": "workspace:*",
     "@mkt/adapters-identity-clerk": "workspace:*",
-    "@mkt/adapters-fakes": "workspace:*"
+    "@mkt/adapters-fakes": "workspace:*",
+    "@mkt/modules-integrations": "workspace:*"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",

@@ -186,7 +186,7 @@ RF-TEN-01/02 · RNF-TEN-03
 - [ ] **US-078 — Domínio próprio com TLS** (M) — RF-TEN-03; produto em cima do resultado da US-085: tela no admin, `DomainProvisioningPort` com adapter Cloudflare for SaaS + fake, verificação DNS (CNAME/TXT), status do certificado, remoção.
 - [ ] **US-079 — Configuração de integrações pelo tenant** (M) — RF-INT-01; tela no admin: escolher provedor, credenciais, "testar conexão", ativar; RN-TEN-02 bloqueia checkout sem gateway válido.
 - [x] **US-080 — Suspensão e modo suporte** (M) — RF-TEN-06/07, RN-TEN-04; audit log visível ao admin do tenant.
-- [ ] **US-081 — Console: lista de tenants e uso** (M) — RF-TEN-11; projeção de uso alimentada por eventos.
+- [x] **US-081 — Console: lista de tenants e uso** (M) — RF-TEN-11; projeção de uso alimentada por eventos.
 
 ---
 ## E01 — Identidade e acesso (Fase 1)

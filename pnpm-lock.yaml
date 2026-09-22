@@ -274,6 +274,9 @@ importers:
       '@mkt/modules-identity':
         specifier: workspace:*
         version: link:../../packages/modules/identity
+      '@mkt/modules-integrations':
+        specifier: workspace:*
+        version: link:../../packages/modules/integrations
       '@mkt/modules-template':
         specifier: workspace:*
         version: link:../../packages/modules/_template
@@ -592,6 +595,9 @@ importers:
       '@mkt/modules-identity':
         specifier: workspace:*
         version: link:../identity
+      '@mkt/modules-integrations':
+        specifier: workspace:*
+        version: link:../integrations
       '@mkt/platform':
         specifier: workspace:*
         version: link:../../platform

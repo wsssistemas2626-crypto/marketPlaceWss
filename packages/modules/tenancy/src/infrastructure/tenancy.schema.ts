@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgSchema, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, jsonb, pgSchema, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const tenancySchema = pgSchema('tenancy');
 
@@ -68,3 +68,14 @@ export const supportSessions = tenancySchema.table('support_sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const tenantUsage = tenancySchema.table(
+  'tenant_usage',
+  {
+    tenantId: uuid('tenant_id').notNull(),
+    metric: text('metric').notNull(),
+    value: bigint('value', { mode: 'number' }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.tenantId, table.metric] })],
+);

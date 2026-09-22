@@ -10,6 +10,8 @@ export interface WorkerEnv {
   readonly redisUrl: string;
   readonly nodeEnv: string;
   readonly isProduction: boolean;
+  /** Chave das credenciais de integração (32 bytes base64). */
+  readonly integrationsEncryptionKey: string;
   /** Role platform (BYPASSRLS): só outbox relay e @PlatformJob. */
   readonly platformDatabaseUrl?: string;
 }
@@ -45,6 +47,10 @@ export function loadWorkerEnv(): WorkerEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv,
     isProduction: nodeEnv === 'production',
+    integrationsEncryptionKey:
+      process.env.INTEGRATIONS_ENCRYPTION_KEY === undefined || process.env.INTEGRATIONS_ENCRYPTION_KEY === ''
+        ? Buffer.alloc(32, 7).toString('base64')
+        : process.env.INTEGRATIONS_ENCRYPTION_KEY,
     ...(process.env.DATABASE_URL_PLATFORM === undefined
       ? {}
       : { platformDatabaseUrl: process.env.DATABASE_URL_PLATFORM }),

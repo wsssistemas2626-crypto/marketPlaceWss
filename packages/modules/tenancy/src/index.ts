@@ -45,6 +45,16 @@ export {
   themeToStyleSheet,
   type Theme,
 } from './domain/theme.js';
+export {
+  EMPTY_USAGE,
+  TenantUsageProjection,
+  USAGE_METRICS,
+  USAGE_PROJECTION,
+  type TenantUsage,
+  type UsageMetric,
+  type UsageProjectionPort,
+} from './application/tenant-usage.js';
+export { TenantUsageHandler } from './events/tenant-usage.handler.js';
 export { assertValidTenantSlug, isReservedSlug, RESERVED_SLUGS } from './domain/tenant-slug.js';
 export { DbConfigSource } from './infrastructure/db-config-source.js';
 export { DbTenantDirectory } from './infrastructure/db-tenant-directory.js';
