@@ -7,7 +7,7 @@ Marque `[x]` quando a story atender à Definition of Done do `CLAUDE.md`.
 ---
 ## E00 — Fundação técnica (Fase 0)
 
-- [ ] **US-001 [ENABLER] Monorepo e tooling** (M) — pnpm + Turborepo, tsconfig/eslint/prettier compartilhados em `packages/config`, apps vazios (`api`, `worker`, `storefront`, `seller-center`, `admin`, `console`), `docker-compose.yml` (postgres montando `infra/db/` e executando `local-init.sh`, redis com `noeviction`, meilisearch, mailpit, minio), scripts do CLAUDE.md §6. Cada app já nasce lendo `PORT`, escutando em `::` e com `/health`.
+- [x] **US-001 [ENABLER] Monorepo e tooling** (M) — pnpm + Turborepo, tsconfig/eslint/prettier compartilhados em `packages/config`, apps vazios (`api`, `worker`, `storefront`, `seller-center`, `admin`, `console`), `docker-compose.yml` (postgres montando `infra/db/` e executando `local-init.sh`, redis com `noeviction`, meilisearch, mailpit, minio), scripts do CLAUDE.md §6. Cada app já nasce lendo `PORT`, escutando em `::` e com `/health`.
   - *Aceite:* `pnpm install && docker compose up -d && pnpm dev` sobe tudo; `GET /health` retorna 200 com status de DB e Redis.
 - [ ] **US-002 [ENABLER] Fronteiras de módulo** (P) — `eslint-plugin-boundaries` (ou dependency-cruiser) com as regras do CLAUDE.md §4; teste que falha ao importar interno de outro módulo.
 - [ ] **US-003 [ENABLER] Shared kernel** (P) — `Money` (centavos, soma/rateio sem perda — RN-FIN-03), `Id` (UUIDv7), `Result`, `DomainError`, `Clock`, `DomainEvent`. 100% testado.

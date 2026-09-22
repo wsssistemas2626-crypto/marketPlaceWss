@@ -1,0 +1,5 @@
+# O repositório usa LF (Prettier: endOfLine=lf); evita diffs de fim de linha no Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
