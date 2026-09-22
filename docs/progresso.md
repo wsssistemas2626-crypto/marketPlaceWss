@@ -13,11 +13,11 @@
 ## Checkpoints da Fase 0
 | Checkpoint | Stories | Status | Branch / PR |
 |---|---|---|---|
-| C1 — Monorepo de pé | US-001, US-002, US-003 | ✅ | `fase-0/c1-monorepo` |
-| C2 — Tenancy, banco e eventos | US-070, US-004, US-071, US-005, US-072 | ✅ | `fase-0/c2-tenancy-banco-eventos` |
-| C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ✅ | `fase-0/c3-plataforma-clerk` |
-| C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ | `fase-0/c4-console-isolamento-ci` |
-| C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` |
+| C1 — Monorepo de pé | US-001, US-002, US-003 | ✅ | PR #1 |
+| C2 — Tenancy, banco e eventos | US-070, US-004, US-071, US-005, US-072 | ✅ | PR #2 |
+| C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ✅ | PR #3 |
+| C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ CI verde | PR #4 |
+| C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` (PR #5) |
 
 ## Concluído
 - **US-001** — monorepo pnpm + Turborepo, `packages/config` (tsconfig/eslint/prettier), `packages/platform`
@@ -63,6 +63,14 @@
 - Checklist §A/§G: **CLERK_WEBHOOK_SIGNING_SECRET** e **CONSOLE_CLERK_WEBHOOK_SIGNING_SECRET** continuam pendentes
   (só existem depois de criar o endpoint no dashboard). Sem eles o adapter recusa webhooks — que é o comportamento
   correto. Proteção do branch `main` e branch `production` também seguem pendentes.
+
+## Achados da revisão de arquitetura (corrigidos)
+- **Relay do outbox sem backoff**: varrendo a cada 1 s, as 5 tentativas se esgotavam em ~5 s e qualquer queda
+  curta do barramento mandaria eventos válidos para a DLQ. Corrigido com `next_attempt_at` e backoff exponencial.
+- **Módulo dependendo de adapter**: `integrations` declarava `@mkt/adapters-fakes`. O registro de adapters passou
+  para o composition root (apps/api) — quem foi pego foi a própria checagem de fronteiras, no CI.
+- **Policy de RLS com `::uuid` direto**: sem contexto, o setting vem vazio e a consulta explodia em vez de não
+  ver nada. Corrigido com `NULLIF` no gerador, nas migrações e no `infra/db/module-schema-template.sql`.
 
 ## Decisões tomadas durante o desenvolvimento
 - **ADR-015 (Proposto)**: fronteiras verificadas com regras nativas do ESLint em vez de `eslint-plugin-boundaries`.
