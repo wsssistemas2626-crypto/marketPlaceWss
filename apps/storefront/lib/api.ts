@@ -22,8 +22,16 @@ export async function tenantHeaders(): Promise<Record<string, string>> {
   };
 }
 
+/** Por que a loja não abriu — a página muda conforme o caso (RF-TEN-06). */
+export type StoreUnavailable = 'not_found' | 'suspended' | 'offline';
+
+export interface ApiResult<T> {
+  readonly data?: T;
+  readonly unavailable?: StoreUnavailable;
+}
+
 /** GET numa rota pública da API, no contexto do tenant do host. */
-export async function fetchFromApi<T>(path: string): Promise<T | undefined> {
+export async function fetchFromApi<T>(path: string): Promise<ApiResult<T>> {
   try {
     const response = await fetch(`${API_URL}${path}`, {
       headers: await tenantHeaders(),
@@ -31,8 +39,15 @@ export async function fetchFromApi<T>(path: string): Promise<T | undefined> {
       cache: 'no-store',
     });
 
-    return response.ok ? ((await response.json()) as T) : undefined;
+    if (response.ok) return { data: (await response.json()) as T };
+
+    // 403 do tenant suspenso é diferente de host desconhecido: o comprador
+    // precisa ver "volte em breve", não "esta loja não existe"
+    const problem = (await response.json().catch(() => ({}))) as { code?: string };
+    if (problem.code === 'tenant_suspended') return { unavailable: 'suspended' };
+
+    return { unavailable: 'not_found' };
   } catch {
-    return undefined;
+    return { unavailable: 'offline' };
   }
 }

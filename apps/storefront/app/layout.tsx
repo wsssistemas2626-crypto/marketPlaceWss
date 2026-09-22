@@ -15,10 +15,9 @@ interface ThemeResponse {
  * host (CLAUDE.md §9) — via X-Forwarded-Host assinado, porque `Host` é
  * forbidden header no fetch e seria descartado (ver lib/api.ts).
  */
-const fetchTheme = (): Promise<ThemeResponse | undefined> =>
-  // loja no ar com o estilo padrão é melhor que loja fora do ar: o helper
-  // devolve undefined em vez de lançar
-  fetchFromApi<ThemeResponse>('/v1/store/theme');
+/** Loja no ar com o estilo padrão é melhor que loja fora do ar. */
+const fetchTheme = async (): Promise<ThemeResponse | undefined> =>
+  (await fetchFromApi<ThemeResponse>('/v1/store/theme')).data;
 
 export async function generateMetadata(): Promise<Metadata> {
   const theme = await fetchTheme();

@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import {
   ConfigService,
+  consumeOnce,
   createPool,
   discoverMigrations,
   resolveTenantByHost,
@@ -128,6 +129,41 @@ describe.skipIf(!dockerAvailable)('registro de tenants no banco (integração)',
         TenantSuspendedError,
       );
       directory.now = () => Date.now();
+    });
+  });
+
+  describe('suspensão (RN-TEN-04)', () => {
+    it('tenant suspenso não atende o storefront, mas os eventos dele continuam', async () => {
+      const tenant = await registry.provision({ slug: 'loja-suspensa', name: 'Suspensa' });
+      await registry.changeStatus(tenant.id, 'suspended');
+
+      // storefront fora do ar
+      await expect(resolveTenantByHost('loja-suspensa.localhost', { directory })).rejects.toBeInstanceOf(
+        TenantSuspendedError,
+      );
+
+      // …mas o consumidor de eventos não consulta status: pedido em andamento
+      // segue processando pagamento, entrega e repasse. O dinheiro do seller
+      // não pode ficar preso pela inadimplência do operador.
+      const evento = {
+        specversion: '1.0' as const,
+        id: '0193a000-0000-7000-8000-000000000f01',
+        source: 'mkt/tenancy',
+        type: 'template.widget.created',
+        dataschemaversion: 1,
+        time: new Date().toISOString(),
+        subject: 'widget/1',
+        tenantid: tenant.id,
+        data: { widgetId: 'w1', slug: 'w', name: 'W', priceCents: 1 },
+      };
+
+      let processou = false;
+      const resultado = await consumeOnce(appPool, evento, 'teste-suspensao', async () => {
+        processou = true;
+      });
+
+      expect(resultado.processed).toBe(true);
+      expect(processou).toBe(true);
     });
   });
 

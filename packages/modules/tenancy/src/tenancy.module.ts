@@ -3,6 +3,7 @@ import { Global, Module } from '@nestjs/common';
 import { CONFIG_SOURCE, DATABASE_POOL, TENANT_DIRECTORY, type DatabasePool } from '@mkt/platform';
 import { SystemClock } from '@mkt/shared-kernel';
 
+import { ChangeTenantStatus } from './application/change-tenant-status.js';
 import { CompleteProvisioning } from './application/complete-provisioning.js';
 import {
   PROVISIONING_STEPS_REPOSITORY,
@@ -16,10 +17,17 @@ import {
   type WorkforceProvisioningPort,
 } from './application/provision-tenant.js';
 import { TENANT_REGISTRY, type TenantRegistryPort } from './application/tenant-registry.js';
+import { AdminSupportController, PlatformSupportController } from './http/support-mode.controller.js';
 import { AdminThemeController, StoreThemeController } from './http/theme.controller.js';
 import { PlatformTenantsController } from './http/platform-tenants.controller.js';
+import {
+  SUPPORT_SESSION_REPOSITORY,
+  SupportMode,
+  type SupportSessionRepositoryPort,
+} from './application/support-mode.js';
 import { ThemeService, THEME_REPOSITORY, type ThemeRepositoryPort } from './application/theme-service.js';
 import { DbConfigSource } from './infrastructure/db-config-source.js';
+import { DrizzleSupportSessionRepository } from './infrastructure/drizzle-support-session.repository.js';
 import { DrizzleThemeRepository } from './infrastructure/drizzle-theme.repository.js';
 import { DbTenantDirectory } from './infrastructure/db-tenant-directory.js';
 import { DrizzleProvisioningSteps } from './infrastructure/drizzle-provisioning-steps.js';
@@ -55,7 +63,13 @@ export class TenancyModule {
 
     return {
       module: TenancyModule,
-      controllers: [PlatformTenantsController, AdminThemeController, StoreThemeController],
+      controllers: [
+        PlatformTenantsController,
+        AdminThemeController,
+        StoreThemeController,
+        PlatformSupportController,
+        AdminSupportController,
+      ],
       providers: [
         DbTenantDirectory,
         { provide: TENANT_DIRECTORY, useExisting: DbTenantDirectory },
@@ -65,6 +79,22 @@ export class TenancyModule {
         { provide: TENANCY_EVENT_PUBLISHER, useClass: TenancyOutboxPublisher },
         { provide: TENANCY_TRANSACTION, useClass: TenancyTransaction },
         { provide: THEME_REPOSITORY, useClass: DrizzleThemeRepository },
+        { provide: SUPPORT_SESSION_REPOSITORY, useClass: DrizzleSupportSessionRepository },
+        {
+          provide: SupportMode,
+          useFactory: (repository: SupportSessionRepositoryPort) =>
+            new SupportMode(repository, new SystemClock()),
+          inject: [SUPPORT_SESSION_REPOSITORY],
+        },
+        {
+          provide: ChangeTenantStatus,
+          useFactory: (
+            registry: TenantRegistryPort,
+            events: EventPublisherPort,
+            transaction: TransactionPort,
+          ) => new ChangeTenantStatus(registry, events, transaction, new SystemClock()),
+          inject: [TENANT_REGISTRY, TENANCY_EVENT_PUBLISHER, TENANCY_TRANSACTION],
+        },
         {
           provide: ThemeService,
           useFactory: (repository: ThemeRepositoryPort) => new ThemeService(repository),
@@ -126,6 +156,8 @@ export class TenancyModule {
         ProvisionTenant,
         CompleteProvisioning,
         ThemeService,
+        SupportMode,
+        ChangeTenantStatus,
       ],
     };
   }

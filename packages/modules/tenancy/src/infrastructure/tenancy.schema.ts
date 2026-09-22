@@ -57,3 +57,14 @@ export const themes = tenancySchema.table('themes', {
   publishedAt: timestamp('published_at', { withTimezone: true }),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const supportSessions = tenancySchema.table('support_sessions', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  staffUserId: text('staff_user_id').notNull(),
+  reason: text('reason').notNull(),
+  scope: text('scope').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

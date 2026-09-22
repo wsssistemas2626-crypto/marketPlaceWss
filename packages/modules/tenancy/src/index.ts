@@ -1,5 +1,15 @@
 /** API pública do módulo `tenancy` (CLAUDE.md §4.1). */
+export { ChangeTenantStatus, type ChangeTenantStatusCommand } from './application/change-tenant-status.js';
 export { CompleteProvisioning, type SeedConfirmation } from './application/complete-provisioning.js';
+export {
+  MAX_SUPPORT_DURATION_MINUTES,
+  SUPPORT_SESSION_REPOSITORY,
+  SupportMode,
+  type OpenSupportSessionCommand,
+  type SupportScope,
+  type SupportSession,
+  type SupportSessionRepositoryPort,
+} from './application/support-mode.js';
 export {
   PROVISIONING_STEPS,
   PROVISIONING_STEPS_REPOSITORY,

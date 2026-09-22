@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { ConsoleAuth } from '@mkt/modules-identity';
 import { NotFoundError, ValidationError } from '@mkt/shared-kernel';
 
+import { ChangeTenantStatus } from '../application/change-tenant-status.js';
 import { ProvisionTenant, type ProvisionTenantResult } from '../application/provision-tenant.js';
 import {
   TENANT_REGISTRY,
@@ -27,6 +28,8 @@ const provisionSchema = z.object({
 
 const statusSchema = z.object({
   status: z.enum(['provisioning', 'trial', 'active', 'suspended', 'cancelled']),
+  // motivo fica no evento e no histórico: suspensão sem motivo não se explica
+  reason: z.string().min(5).max(300).optional(),
 });
 
 /**
@@ -41,6 +44,7 @@ export class PlatformTenantsController {
   constructor(
     @Inject(TENANT_REGISTRY) private readonly registry: TenantRegistryPort,
     private readonly provisionTenant: ProvisionTenant,
+    private readonly changeTenantStatus: ChangeTenantStatus,
   ) {}
 
   @Get()
@@ -87,6 +91,10 @@ export class PlatformTenantsController {
     const parsed = statusSchema.safeParse(body);
     if (!parsed.success) throw new ValidationError('Status inválido', { field: 'status' });
 
-    return this.registry.changeStatus(tenantId, parsed.data.status);
+    return this.changeTenantStatus.execute({
+      tenantId,
+      status: parsed.data.status,
+      ...(parsed.data.reason === undefined ? {} : { reason: parsed.data.reason }),
+    });
   }
 }
