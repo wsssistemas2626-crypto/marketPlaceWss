@@ -7,13 +7,13 @@
 - **Fase:** 0 — Fundação
 - **Checkpoint atual:** C1
 - **Branch de trabalho:** `fase-0/c1-monorepo`
-- **Próxima story:** US-003 (shared kernel)
+- **Próxima story:** US-070 (TenantContext) — checkpoint C2
 - **Última atualização:** 2026-09-22
 
 ## Checkpoints da Fase 0
 | Checkpoint | Stories | Status | Branch / PR |
 |---|---|---|---|
-| C1 — Monorepo de pé | US-001, US-002, US-003 | 🚧 US-001 e US-002 feitas | `fase-0/c1-monorepo` |
+| C1 — Monorepo de pé | US-001, US-002, US-003 | ✅ | `fase-0/c1-monorepo` |
 | C2 — Tenancy, banco e eventos | US-070, US-004, US-071, US-005, US-072 | ⏳ | |
 | C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ⏳ | |
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ⏳ | |
@@ -29,6 +29,10 @@
 - **US-002** — fronteiras do CLAUDE.md §4 verificadas por `pnpm lint:boundaries`: regras de import por camada
   em `packages/config/eslint/boundaries.js` + lista branca de dependências no package.json de cada módulo
   (`scripts/check-module-dependencies.mjs`). 12 testes sobre fixtures com violações propositais.
+
+- **US-003** — `@mkt/shared-kernel`: `Money` (centavos, half-even, rateio sem perda RN-FIN-03), `Id` (UUID v7),
+  `Result`, `DomainError` e filhos, `Clock`/`FixedClock`, `DomainEvent` no formato CloudEvents. 38 testes,
+  cobertura 100% travada no vitest. Plano: `docs/planos/US-003.md`.
 
 ## Bloqueios e pendências
 - `pnpm db:migrate`, `pnpm gen:openapi` e `pnpm gen:sdk` existem como tarefas do Turborepo mas ainda não têm
