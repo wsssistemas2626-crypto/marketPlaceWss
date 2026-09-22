@@ -1,4 +1,7 @@
-import { auth } from '@clerk/nextjs/server';
+import Link from 'next/link';
+
+import { panelFetch } from '../lib/api';
+import { celula, moeda, pagina } from '../lib/ui';
 
 interface TenantRow {
   id: string;
@@ -11,11 +14,6 @@ interface TenantRow {
   integrations: { category: string; provider: string }[];
 }
 
-const API_URL = process.env.API_INTERNAL_URL ?? 'http://localhost:3100';
-
-const moeda = (cents: number): string =>
-  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
 /**
  * Console da plataforma: tenants com status, plano, uso e saúde de integrações
  * (US-081 / RF-TEN-11).
@@ -24,31 +22,23 @@ const moeda = (cents: number): string =>
  * fala com o banco (CLAUDE.md §9).
  */
 async function fetchTenants(): Promise<{ tenants: TenantRow[]; error?: string }> {
-  const { getToken } = await auth();
-  const token = await getToken();
+  const { data, error } = await panelFetch<{ data: TenantRow[] }>('/v1/platform/tenants');
 
-  if (token === null) return { tenants: [], error: 'Faça login para ver os tenants.' };
-
-  const response = await fetch(`${API_URL}/v1/platform/tenants`, {
-    headers: { authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) return { tenants: [], error: `A API respondeu ${response.status}.` };
-
-  const body = (await response.json()) as { data: TenantRow[] };
-  return { tenants: body.data };
+  return data === undefined
+    ? { tenants: [], ...(error === undefined ? {} : { error }) }
+    : { tenants: data.data };
 }
-
-const celula = { padding: '.5rem', borderBottom: '1px solid #eee', textAlign: 'left' as const };
 
 export default async function Home() {
   const { tenants, error } = await fetchTenants();
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: '72rem' }}>
+    <main style={pagina}>
       <h1>Console da plataforma</h1>
-      <p>Tenants provisionados, uso e integrações ativas.</p>
+      <p>
+        Tenants provisionados, uso e integrações ativas. Clique no slug para suspender, reativar ou abrir modo
+        suporte.
+      </p>
 
       {error === undefined ? null : <p role="alert">{error}</p>}
 
@@ -66,7 +56,9 @@ export default async function Home() {
           {tenants.map((tenant) => (
             <tr key={tenant.id}>
               <td style={celula}>
-                <strong>{tenant.slug}</strong>
+                <Link href={`/tenants/${tenant.slug}`}>
+                  <strong>{tenant.slug}</strong>
+                </Link>
                 <br />
                 <small>{tenant.hosts[0]}</small>
               </td>

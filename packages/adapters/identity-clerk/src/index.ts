@@ -75,9 +75,15 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
     kind: OrganizationKind;
     tenantId: string;
     sellerId?: string;
+    /** Slug estável — deixa a organização localizável sem guardar o id. */
+    slug?: string;
+    /** Dono inicial; sem ele a organização nasce sem nenhum membro. */
+    createdBy?: string;
   }): Promise<{ organizationId: string }> {
     const organization = await this.client.organizations.createOrganization({
       name: input.name,
+      ...(input.slug === undefined ? {} : { slug: input.slug }),
+      ...(input.createdBy === undefined ? {} : { createdBy: input.createdBy }),
       publicMetadata: {
         kind: input.kind,
         tenantId: input.tenantId,
@@ -86,6 +92,68 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
     });
 
     return { organizationId: organization.id };
+  }
+
+  /** Busca por slug; `undefined` quando não existe (usado para ser idempotente). */
+  async findOrganizationBySlug(slug: string): Promise<{ organizationId: string; name: string } | undefined> {
+    const { data } = await this.client.organizations.getOrganizationList({ query: slug, limit: 100 });
+    const organization = data.find((candidate) => candidate.slug === slug);
+
+    return organization === undefined
+      ? undefined
+      : { organizationId: organization.id, name: organization.name };
+  }
+
+  /** Garante que o usuário é membro da organização; já sendo, não faz nada. */
+  async ensureMembership(input: {
+    organizationId: string;
+    userId: string;
+    role?: string;
+  }): Promise<'created' | 'already_member'> {
+    const { data } = await this.client.organizations.getOrganizationMembershipList({
+      organizationId: input.organizationId,
+      limit: 100,
+    });
+
+    if (data.some((membership) => membership.publicUserData?.userId === input.userId)) {
+      return 'already_member';
+    }
+
+    await this.client.organizations.createOrganizationMembership({
+      organizationId: input.organizationId,
+      userId: input.userId,
+      role: input.role ?? 'org:admin',
+    });
+
+    return 'created';
+  }
+
+  /**
+   * Usuário da instância: o do e-mail informado ou, sem e-mail, o primeiro
+   * cadastrado (em desenvolvimento, quem criou a conta).
+   */
+  async findUser(email?: string): Promise<{ userId: string; email?: string } | undefined> {
+    const { data } = await this.client.users.getUserList(
+      email === undefined ? { limit: 1, orderBy: '+created_at' } : { emailAddress: [email], limit: 1 },
+    );
+
+    const user = data[0];
+    if (user === undefined) return undefined;
+
+    const primeiro = user.emailAddresses[0]?.emailAddress;
+    return { userId: user.id, ...(primeiro === undefined ? {} : { email: primeiro }) };
+  }
+
+  /**
+   * Convite para a aplicação inteira (não para uma organização): é o caminho
+   * de entrada do staff no Console, onde o cadastro é restrito a convite.
+   */
+  async inviteToApplication(email: string, redirectUrl?: string): Promise<void> {
+    await this.client.invitations.createInvitation({
+      emailAddress: email,
+      ...(redirectUrl === undefined ? {} : { redirectUrl }),
+      ignoreExisting: true,
+    });
   }
 
   async updateOrganizationMetadata(

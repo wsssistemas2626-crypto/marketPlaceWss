@@ -16,6 +16,7 @@
     "test:e2e": "turbo run test:e2e",
     "db:migrate": "turbo run db:migrate",
     "seed:dev": "turbo run seed:dev",
+    "link:orgs": "turbo run build --filter=@mkt/api --output-logs=errors-only && node apps/api/dist/link-orgs.js",
     "gen:openapi": "turbo run gen:openapi",
     "gen:sdk": "turbo run gen:sdk",
     "format": "prettier --write .",
