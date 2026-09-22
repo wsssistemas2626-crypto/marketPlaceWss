@@ -56,7 +56,7 @@ export async function readModuleManifests(rootPath) {
 
   const manifests = await Promise.all(
     entries
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith('_'))
+      .filter((entry) => entry.isDirectory())
       .map(async (entry) => {
         const manifestPath = path.join(modulesDir, entry.name, 'package.json');
         try {

@@ -11,8 +11,8 @@ Marque `[x]` quando a story atender à Definition of Done do `CLAUDE.md`.
   - *Aceite:* `pnpm install && docker compose up -d && pnpm dev` sobe tudo; `GET /health` retorna 200 com status de DB e Redis.
 - [x] **US-002 [ENABLER] Fronteiras de módulo** (P) — `eslint-plugin-boundaries` (ou dependency-cruiser) com as regras do CLAUDE.md §4; teste que falha ao importar interno de outro módulo.
 - [x] **US-003 [ENABLER] Shared kernel** (P) — `Money` (centavos, soma/rateio sem perda — RN-FIN-03), `Id` (UUIDv7), `Result`, `DomainError`, `Clock`, `DomainEvent`. 100% testado.
-- [ ] **US-004 [ENABLER] Banco por módulo** (M) — Drizzle com um schema Postgres por módulo, migrações por módulo executadas por `pnpm db:migrate` **com o role `migrator`**, helper `createModuleSchema` conforme `infra/db/module-schema-template.sql`, entrypoint `dist/migrate.js` para o pre-deploy da Railway, teste que conecta com `DATABASE_URL` e falha se o role for superusuário ou tiver BYPASSRLS, helper de transação (Unit of Work) e Testcontainers para testes de integração.
-- [ ] **US-005 [ENABLER] Outbox + Event Bus** (M) — tabela `outbox` por schema, gravação na mesma transação, relay no worker publicando no BullMQ, consumidores idempotentes (tabela `processed_events`), DLQ e reprocessamento. Envelope CloudEvents validado por Zod (ver `arquitetura/03-integracoes.md`).
+- [x] **US-004 [ENABLER] Banco por módulo** (M) — Drizzle com um schema Postgres por módulo, migrações por módulo executadas por `pnpm db:migrate` **com o role `migrator`**, helper `createModuleSchema` conforme `infra/db/module-schema-template.sql`, entrypoint `dist/migrate.js` para o pre-deploy da Railway, teste que conecta com `DATABASE_URL` e falha se o role for superusuário ou tiver BYPASSRLS, helper de transação (Unit of Work) e Testcontainers para testes de integração.
+- [x] **US-005 [ENABLER] Outbox + Event Bus** (M) — tabela `outbox` por schema, gravação na mesma transação, relay no worker publicando no BullMQ, consumidores idempotentes (tabela `processed_events`), DLQ e reprocessamento. Envelope CloudEvents validado por Zod (ver `arquitetura/03-integracoes.md`).
   - *Aceite:* teste de integração prova que (1) rollback da transação não publica evento; (2) evento duplicado é processado uma só vez; (3) falha 5× vai para DLQ.
 - [ ] **US-006 [ENABLER] Observabilidade e erros** (P) — pino com redação de PII, OpenTelemetry, `correlation_id`, filtro de exceções → Problem Details (RFC 9457).
 - [ ] **US-007 [ENABLER] Idempotência e rate limit** (P) — interceptor `Idempotency-Key` (armazenamento 24 h em Redis/PG) e rate limit por IP/usuário/API key.
@@ -57,7 +57,7 @@ customização do session token da Clerk com claims `org_kind`, `tenant_id`, `se
 middleware `clerkMiddleware` nos apps admin, seller-center e console; seed de organizações de desenvolvimento.
 *Fora de escopo:* login de compradores (US-010/011).
 
-### US-070 [ENABLER] — TenantContext e resolução do tenant
+### US-070 [ENABLER] — TenantContext e resolução do tenant ✅
 **Como** plataforma **eu quero** que toda requisição e job saiba a qual tenant pertence **para que** nenhum dado seja lido ou gravado no tenant errado.
 ```gherkin
 Cenário: resolução por host
@@ -87,7 +87,7 @@ Cenário: host desconhecido ou tenant suspenso
 ```
 ADR-012 · `arquitetura/06-multi-tenancy.md` §2 · RNF-TEN-01
 
-### US-071 [ENABLER] — RLS e repositório tenant-aware
+### US-071 [ENABLER] — RLS e repositório tenant-aware ✅
 ```gherkin
 Cenário: filtro automático
   Dado ofertas dos tenants A e B
@@ -104,7 +104,7 @@ Cenário: tabela sem RLS
 ```
 Inclui: helper `enableTenantRls(table)` para migrações, role `app` sem BYPASSRLS, role `platform` restrito, `withTenantTx`, geração de números de pedido por tenant.
 
-- [ ] **US-072 [ENABLER] Tenant em eventos, jobs, cache, storage e logs** (M) — `tenantid` obrigatório no envelope; consumidores abrem o contexto a partir do evento; decorator `@PlatformJob`; prefixos `t:{tenantId}` em Redis e `t/{tenantId}/` no storage; atributo `tenant.id` em logs/traces/métricas; concorrência de jobs e rate limit por tenant. Aceite: evento sem `tenantid` vai para DLQ; teste prova fairness entre dois tenants.
+- [x] **US-072 [ENABLER] Tenant em eventos, jobs, cache, storage e logs** (M) — `tenantid` obrigatório no envelope; consumidores abrem o contexto a partir do evento; decorator `@PlatformJob`; prefixos `t:{tenantId}` em Redis e `t/{tenantId}/` no storage; atributo `tenant.id` em logs/traces/métricas; concorrência de jobs e rate limit por tenant. Aceite: evento sem `tenantid` vai para DLQ; teste prova fairness entre dois tenants.
 - [ ] **US-073 [ENABLER] Configuração hierárquica e entitlements** (M) — `ConfigService` (plataforma → plano → tenant), `@RequiresModule`, verificação de limites do plano (RN-TEN-03). RF-TEN-05/08.
 - [ ] **US-074 [ENABLER] Suíte de isolamento** (M) — harness que cria Tenant A e B com dados e, para cada rota registrada, prova que A não acessa B (listagem, leitura por ID, alteração, exclusão). Roda no CI; toda story nova herda automaticamente. RNF-TEN-01.
 - [ ] **US-075 [ENABLER] Módulo `tenancy` e app `console` (esqueleto)** (M) — tenants, domínios, planos, staff autenticado pela aplicação Clerk **Console** (MFA obrigatório, cadastro restrito por allowlist/convite), rotas `/v1/platform/*`, seed de 2 tenants de desenvolvimento (`loja-a.localhost`, `loja-b.localhost`).

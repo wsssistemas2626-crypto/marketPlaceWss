@@ -2,10 +2,9 @@ import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/comm
 import { Redis } from 'ioredis';
 import pg from 'pg';
 
-import { loadApiEnv } from '../env.js';
+import { DATABASE_POOL, REDIS_CLIENT, createPool } from '@mkt/platform';
 
-export const POSTGRES_POOL = Symbol('POSTGRES_POOL');
-export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
+import { loadApiEnv } from '../env.js';
 
 /**
  * Clientes de infraestrutura do processo `api`.
@@ -17,13 +16,8 @@ export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
 @Module({
   providers: [
     {
-      provide: POSTGRES_POOL,
-      useFactory: () =>
-        new pg.Pool({
-          connectionString: loadApiEnv().databaseUrl,
-          max: 10,
-          connectionTimeoutMillis: 5_000,
-        }),
+      provide: DATABASE_POOL,
+      useFactory: () => createPool(loadApiEnv().databaseUrl, { applicationName: 'marketplace-api' }),
     },
     {
       provide: REDIS_CLIENT,
@@ -36,11 +30,11 @@ export const REDIS_CLIENT = Symbol('REDIS_CLIENT');
         }),
     },
   ],
-  exports: [POSTGRES_POOL, REDIS_CLIENT],
+  exports: [DATABASE_POOL, REDIS_CLIENT],
 })
 export class InfrastructureModule implements OnApplicationShutdown {
   constructor(
-    @Inject(POSTGRES_POOL) private readonly pool: pg.Pool,
+    @Inject(DATABASE_POOL) private readonly pool: pg.Pool,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 

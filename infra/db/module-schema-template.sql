@@ -22,8 +22,8 @@ ALTER TABLE <modulo>.<tabela> ENABLE ROW LEVEL SECURITY;
 ALTER TABLE <modulo>.<tabela> FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON <modulo>.<tabela>;
 CREATE POLICY tenant_isolation ON <modulo>.<tabela>
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
-  WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
 
 -- 4) Outbox do módulo: o relay (platform) marca como publicado
 GRANT SELECT, UPDATE ON <modulo>.outbox TO platform;

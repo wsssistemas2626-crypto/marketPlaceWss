@@ -10,6 +10,8 @@ export interface WorkerEnv {
   readonly redisUrl: string;
   readonly nodeEnv: string;
   readonly isProduction: boolean;
+  /** Role platform (BYPASSRLS): só outbox relay e @PlatformJob. */
+  readonly platformDatabaseUrl?: string;
 }
 
 function required(name: string): string {
@@ -43,5 +45,8 @@ export function loadWorkerEnv(): WorkerEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv,
     isProduction: nodeEnv === 'production',
+    ...(process.env.DATABASE_URL_PLATFORM === undefined
+      ? {}
+      : { platformDatabaseUrl: process.env.DATABASE_URL_PLATFORM }),
   };
 }
