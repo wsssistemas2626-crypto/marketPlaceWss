@@ -11,6 +11,9 @@ importers:
       '@mkt/config':
         specifier: workspace:*
         version: link:packages/config
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.5
       prettier:
         specifier: ^3.6.2
         version: 3.9.8
@@ -269,6 +272,10 @@ importers:
       typescript-eslint:
         specifier: ^8.46.4
         version: 8.70.1(eslint@9.39.5)(typescript@5.9.3)
+    devDependencies:
+      vitest:
+        specifier: ^4.0.10
+        version: 4.1.11(@types/node@24.13.6)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.15))
 
   packages/platform:
     devDependencies:

@@ -9,7 +9,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "lint": "turbo run lint && pnpm lint:boundaries",
+    "lint:boundaries": "eslint --no-error-on-unmatched-pattern --no-warn-ignored --ignore-pattern \"**/test/fixtures/**\" --config packages/config/eslint/boundaries.js packages apps && node packages/config/scripts/check-module-dependencies.mjs",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
@@ -23,7 +24,8 @@
     "@mkt/config": "workspace:*",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "eslint": "^9.39.1"
   },
   "prettier": "@mkt/config/prettier",
   "pnpm": {
