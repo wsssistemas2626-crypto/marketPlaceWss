@@ -11,6 +11,12 @@ export interface ClerkAdapterOptions {
   readonly authorizedParties: readonly string[];
   /** Segredo do endpoint de webhook (`whsec_…`). */
   readonly webhookSigningSecret?: string;
+  /**
+   * A aplicação **Console** não usa Organizations: o staff entra sem
+   * organização ativa. Nas demais (admin, seller center), organização é
+   * obrigatória — sem ela não há tenant.
+   */
+  readonly requireOrganization?: boolean;
 }
 
 interface SessionClaims {
@@ -48,13 +54,14 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
       authorizedParties: [...this.options.authorizedParties],
     })) as SessionClaims;
 
-    if (claims.sub === undefined || claims.org_id === undefined) {
-      throw new Error('Token sem usuário ou sem organização ativa');
+    if (claims.sub === undefined) throw new Error('Token sem usuário');
+    if (this.options.requireOrganization !== false && claims.org_id === undefined) {
+      throw new Error('Token sem organização ativa');
     }
 
     return {
       userId: claims.sub,
-      organizationId: claims.org_id,
+      organizationId: claims.org_id ?? 'console',
       organizationKind: claims.org_kind ?? 'tenant',
       ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
       ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),

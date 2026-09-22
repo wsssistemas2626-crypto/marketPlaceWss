@@ -30,3 +30,26 @@ export function createWorkforceIdentity(env: ApiEnv): WorkforceIdentityPort {
       : { webhookSigningSecret: env.clerk.webhookSigningSecret }),
   });
 }
+
+/**
+ * Identidade do **console** (staff). A Clerk é outra aplicação, sem
+ * Organizations: o staff entra sem organização ativa (ADR-013).
+ */
+export function createConsoleIdentity(env: ApiEnv): WorkforceIdentityPort {
+  const logger = new Logger('ConsoleIdentity');
+
+  if (env.consoleClerk === undefined) {
+    logger.warn('CONSOLE_CLERK_SECRET_KEY ausente: console usando identidade FAKE (apenas desenvolvimento)');
+    return new FakeWorkforceIdentity();
+  }
+
+  return new ClerkWorkforceIdentity({
+    secretKey: env.consoleClerk.secretKey,
+    ...(env.consoleClerk.jwtKey === undefined ? {} : { jwtKey: env.consoleClerk.jwtKey }),
+    authorizedParties: env.consoleClerk.authorizedParties,
+    ...(env.consoleClerk.webhookSigningSecret === undefined
+      ? {}
+      : { webhookSigningSecret: env.consoleClerk.webhookSigningSecret }),
+    requireOrganization: false,
+  });
+}

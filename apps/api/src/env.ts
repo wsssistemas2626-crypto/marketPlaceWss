@@ -16,6 +16,8 @@ export interface ApiEnv {
   readonly cell: string;
   /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
   readonly edgeSharedSecret?: string;
+  /** Credenciais da aplicação Clerk Console (staff). */
+  readonly consoleClerk?: ApiEnv['clerk'];
   /** Credenciais da Clerk (ADR-013). Ausentes = adapter fake em desenvolvimento. */
   readonly clerk?: {
     readonly secretKey: string;
@@ -25,23 +27,32 @@ export interface ApiEnv {
   };
 }
 
-/** `sk_test_xxx` é o placeholder do `.env.example`: não vale como credencial. */
-function clerkFromEnv(): ApiEnv['clerk'] {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (secretKey === undefined || secretKey === '' || secretKey.startsWith('sk_test_xxx')) {
+/**
+ * Credenciais da Clerk. `prefix` escolhe a aplicação: vazio para "Plataforma"
+ * (admin + seller center) e `CONSOLE_` para o console do staff (ADR-013).
+ *
+ * `sk_test_xxx`/`sk_test_yyy` são os placeholders do `.env.example` e não
+ * valem como credencial — com eles, o processo cai no adapter fake.
+ */
+function clerkFromEnv(prefix: '' | 'CONSOLE_' = ''): ApiEnv['clerk'] {
+  const read = (name: string): string | undefined => process.env[`${prefix}${name}`];
+
+  const secretKey = read('CLERK_SECRET_KEY');
+  if (secretKey === undefined || secretKey === '' || /^sk_test_(xxx|yyy)/.test(secretKey)) {
     return undefined;
   }
 
+  const jwtKey = read('CLERK_JWT_KEY');
+  const webhookSigningSecret = read('CLERK_WEBHOOK_SIGNING_SECRET');
+
   return {
     secretKey,
-    ...(process.env.CLERK_JWT_KEY === undefined ? {} : { jwtKey: process.env.CLERK_JWT_KEY }),
-    authorizedParties: (process.env.CLERK_AUTHORIZED_PARTIES ?? '')
+    ...(jwtKey === undefined ? {} : { jwtKey }),
+    authorizedParties: (read('CLERK_AUTHORIZED_PARTIES') ?? '')
       .split(',')
       .map((origin) => origin.trim())
       .filter((origin) => origin !== ''),
-    ...(process.env.CLERK_WEBHOOK_SIGNING_SECRET === undefined
-      ? {}
-      : { webhookSigningSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET }),
+    ...(webhookSigningSecret === undefined ? {} : { webhookSigningSecret }),
   };
 }
 
@@ -69,6 +80,7 @@ function loadDotEnvFile(): void {
 export function loadApiEnv(): ApiEnv {
   loadDotEnvFile();
   const clerk = clerkFromEnv();
+  const consoleClerk = clerkFromEnv('CONSOLE_');
 
   return {
     // A Railway injeta PORT; localmente cai no padrão (armadilha #2).
@@ -89,5 +101,6 @@ export function loadApiEnv(): ApiEnv {
       ? {}
       : { edgeSharedSecret: process.env.EDGE_SHARED_SECRET }),
     ...(clerk === undefined ? {} : { clerk }),
+    ...(consoleClerk === undefined ? {} : { consoleClerk }),
   };
 }

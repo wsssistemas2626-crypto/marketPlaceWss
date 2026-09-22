@@ -63,10 +63,13 @@ describe.skipIf(!dockerAvailable)('RLS e isolamento entre tenants (integração)
 
     it('a lista de exceções é curta e explícita (06-multi-tenancy.md §3.3)', async () => {
       // org_links é o mapa que descobre o tenant: é lido antes de existir contexto
-      expect(RLS_EXEMPT_TABLES).toEqual(['identity.org_links']);
+      expect(RLS_EXEMPT_TABLES).toEqual(['identity.org_links', 'tenancy.domains']);
 
       const semExcecoes = await findTablesMissingTenantRls(migratorPool, []);
-      expect(semExcecoes.map((gap) => `${gap.schema}.${gap.table}`)).toEqual(['identity.org_links']);
+      expect(semExcecoes.map((gap) => `${gap.schema}.${gap.table}`)).toEqual([
+        'identity.org_links',
+        'tenancy.domains',
+      ]);
     });
 
     it('acusa uma tabela nova que esqueceu o RLS', async () => {

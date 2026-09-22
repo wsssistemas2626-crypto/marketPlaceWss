@@ -2,14 +2,15 @@ import { Module } from '@nestjs/common';
 
 import { IdentityModule } from '@mkt/modules-identity';
 import { IntegrationsModule } from '@mkt/modules-integrations';
+import { TenancyModule } from '@mkt/modules-tenancy';
 import { TemplateModule } from '@mkt/modules-template';
 
 import { loadApiEnv } from './env.js';
 import { HealthModule } from './health/health.module.js';
-import { createWorkforceIdentity } from './identity/identity.provider.js';
+import { createConsoleIdentity, createWorkforceIdentity } from './identity/identity.provider.js';
 import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
 import { PlatformModule } from './platform/platform.module.js';
-import { TenancyModule } from './tenancy/tenancy.module.js';
+import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
 
 /**
  * Host HTTP. Os módulos de negócio (`packages/modules/*`) são registrados aqui
@@ -20,9 +21,13 @@ import { TenancyModule } from './tenancy/tenancy.module.js';
     InfrastructureModule,
     PlatformModule,
     TenancyModule,
+    StorefrontTenancyModule,
     HealthModule,
     IntegrationsModule.register({ encryptionKey: loadApiEnv().integrationsEncryptionKey }),
-    IdentityModule.register({ workforceIdentity: createWorkforceIdentity(loadApiEnv()) }),
+    IdentityModule.register({
+      workforceIdentity: createWorkforceIdentity(loadApiEnv()),
+      consoleIdentity: createConsoleIdentity(loadApiEnv()),
+    }),
     TemplateModule,
   ],
 })
