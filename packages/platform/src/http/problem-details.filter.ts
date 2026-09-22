@@ -2,6 +2,7 @@ import { ArgumentsHost, Catch, type ExceptionFilter, HttpException, Logger } fro
 
 import { DomainError } from '@mkt/shared-kernel';
 
+import { currentCorrelationId } from '../observability/correlation-id.js';
 import { TenantError } from '../tenancy/tenant-errors.js';
 
 /** Erro HTTP no formato RFC 9457 (Problem Details), usado em toda a API. */
@@ -12,6 +13,8 @@ export interface ProblemDetails {
   readonly detail?: string;
   readonly instance?: string;
   readonly code: string;
+  /** Liga a resposta ao log e ao trace (RNF-OBS-01). */
+  readonly correlation_id?: string;
   readonly [key: string]: unknown;
 }
 
@@ -21,6 +24,10 @@ const STATUS_BY_CODE: Record<string, number> = {
   invariant_violation: 409,
   conflict: 409,
   not_found: 404,
+  idempotency_key_required: 400,
+  idempotency_key_reused: 409,
+  idempotent_request_in_flight: 409,
+  rate_limit_exceeded: 429,
 };
 
 const statusOf = (error: DomainError): number =>
@@ -59,7 +66,11 @@ export class ProblemDetailsFilter implements ExceptionFilter {
   }
 
   private toProblem(exception: unknown, instance: string | undefined): ProblemDetails {
-    const base = instance === undefined ? {} : { instance };
+    const correlationId = currentCorrelationId();
+    const base = {
+      ...(instance === undefined ? {} : { instance }),
+      ...(correlationId === undefined ? {} : { correlation_id: correlationId }),
+    };
 
     if (exception instanceof DomainError) {
       const status = statusOf(exception);

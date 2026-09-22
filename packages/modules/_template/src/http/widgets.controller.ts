@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 
-import { requireTenant } from '@mkt/platform';
+import { Idempotent, requireTenant } from '@mkt/platform';
 import { unwrap, ValidationError } from '@mkt/shared-kernel';
 
 import { CreateWidget } from '../application/create-widget.js';
@@ -34,6 +34,8 @@ export class WidgetsController {
     return { data: widgets.map(toResponse) };
   }
 
+  // cria recurso: exige Idempotency-Key (CLAUDE.md §4.10)
+  @Idempotent()
   @Post()
   async create(@Body() body: unknown): Promise<WidgetResponse> {
     const parsed = createWidgetSchema.safeParse(body);

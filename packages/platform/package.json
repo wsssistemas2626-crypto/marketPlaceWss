@@ -24,24 +24,45 @@
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",
-    "@types/node": "^24.10.1",
-    "eslint": "^9.39.1",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.10",
-    "@types/pg": "^8.15.6",
+    "@opentelemetry/auto-instrumentations-node": "^0.80.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.222.0",
+    "@opentelemetry/sdk-node": "^0.222.0",
     "@testcontainers/postgresql": "^11.7.1",
-    "@testcontainers/redis": "^11.7.1"
+    "@testcontainers/redis": "^11.7.1",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "eslint": "^9.39.1",
+    "pino-pretty": "^13.1.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.10"
   },
   "dependencies": {
+    "@mkt/contracts": "workspace:*",
     "@mkt/shared-kernel": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
-    "pg": "^8.16.3",
-    "drizzle-orm": "^0.45.2",
-    "@mkt/contracts": "workspace:*",
     "bullmq": "^5.65.0",
-    "ioredis": "^5.9.0"
+    "drizzle-orm": "^0.45.2",
+    "ioredis": "^5.9.0",
+    "pg": "^8.16.3",
+    "pino": "^10.0.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "peerDependencies": {
+    "@opentelemetry/auto-instrumentations-node": "*",
+    "@opentelemetry/exporter-trace-otlp-http": "*",
+    "@opentelemetry/sdk-node": "*"
+  },
+  "peerDependenciesMeta": {
+    "@opentelemetry/sdk-node": {
+      "optional": true
+    },
+    "@opentelemetry/exporter-trace-otlp-http": {
+      "optional": true
+    },
+    "@opentelemetry/auto-instrumentations-node": {
+      "optional": true
+    }
   }
 }
