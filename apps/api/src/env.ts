@@ -10,6 +10,8 @@ export interface ApiEnv {
   readonly nodeEnv: string;
   /** URL do role migrator; só existe onde as migrações rodam. */
   readonly migratorUrl?: string;
+  /** Chave das credenciais de integração (32 bytes base64). */
+  readonly integrationsEncryptionKey: string;
   /** Célula desta implantação (ADR-012). */
   readonly cell: string;
   /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
@@ -46,6 +48,11 @@ export function loadApiEnv(): ApiEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv: process.env.NODE_ENV ?? 'development',
     cell: process.env.PLATFORM_CELL ?? 'shared-1',
+    // em desenvolvimento uma chave fixa basta; em produção vem do KMS (checklist §F)
+    integrationsEncryptionKey:
+      process.env.INTEGRATIONS_ENCRYPTION_KEY === undefined || process.env.INTEGRATIONS_ENCRYPTION_KEY === ''
+        ? Buffer.alloc(32, 7).toString('base64')
+        : process.env.INTEGRATIONS_ENCRYPTION_KEY,
     ...(process.env.DATABASE_URL_MIGRATOR === undefined
       ? {}
       : { migratorUrl: process.env.DATABASE_URL_MIGRATOR }),

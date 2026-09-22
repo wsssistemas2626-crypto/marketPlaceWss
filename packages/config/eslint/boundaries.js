@@ -62,11 +62,11 @@ const CROSS_MODULE_PATTERNS = [
 ];
 
 /**
- * Import relativo que sobe até o `src/` de outro pacote. Só é aplicado dentro de
- * packages/modules e packages/adapters: em outros pacotes, um caminho assim
- * (`../src/x.js` a partir de `test/`) é um import interno legítimo.
+ * Import relativo que sai do próprio pacote e entra no `src/` de outro: são
+ * pelo menos dois níveis acima (`../../../catalog/src/...`). Um `../src/x.js`
+ * a partir de `test/` é import interno legítimo e não casa aqui.
  */
-const RELATIVE_ESCAPE = { group: ['../**/src/**'], message: messages.crossModule };
+const RELATIVE_ESCAPE = { group: ['../../**/src/**'], message: messages.crossModule };
 
 /** Camadas de dentro não enxergam camadas de fora do mesmo módulo. */
 const outwardLayers = (...layers) => ({
