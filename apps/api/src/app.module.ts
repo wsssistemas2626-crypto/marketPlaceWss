@@ -8,7 +8,8 @@ import { TemplateModule } from '@mkt/modules-template';
 
 import { loadApiEnv } from './env.js';
 import { HealthModule } from './health/health.module.js';
-import { createConsoleIdentity, createWorkforceIdentity } from './identity/identity.provider.js';
+import { createWorkforceIdentity, createConsoleIdentity } from './identity/identity.provider.js';
+import { createAdapterRegistry } from './integrations/adapter-registry.provider.js';
 import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
 import { PlatformModule } from './platform/platform.module.js';
 import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
@@ -26,7 +27,10 @@ import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
     TenancyModule,
     StorefrontTenancyModule,
     HealthModule,
-    IntegrationsModule.register({ encryptionKey: loadApiEnv().integrationsEncryptionKey }),
+    IntegrationsModule.register({
+      encryptionKey: loadApiEnv().integrationsEncryptionKey,
+      registry: createAdapterRegistry(),
+    }),
     IdentityModule.register({
       workforceIdentity: createWorkforceIdentity(loadApiEnv()),
       consoleIdentity: createConsoleIdentity(loadApiEnv()),
