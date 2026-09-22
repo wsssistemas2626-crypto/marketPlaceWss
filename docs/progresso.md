@@ -23,9 +23,13 @@
 - **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação
   real depende do domínio e da conta (checklist §C). Relatório em `docs/spikes/US-085.md`.
 - **US-076** — provisionamento idempotente por etapas, orquestrado por evento, com seed confirmado pelos módulos.
-- **US-077** — tema do tenant (rascunho × publicado) aplicado no storefront.
-- **US-080** — suspensão com máquina de estados e modo suporte auditado, visível ao admin do tenant.
+- **US-077** — tema do tenant (rascunho × publicado) aplicado no storefront; tela `/tema` no admin com preview.
+- **US-080** — suspensão com máquina de estados e modo suporte auditado: ações no console (detalhe do tenant)
+  e histórico em `/suporte` no admin do tenant.
 - **US-081** — projeção de uso por eventos e saúde de integrações no console.
+- **`pnpm link:orgs`** — liga as organizações reais da Clerk aos tenants de desenvolvimento (o seed cria
+  vínculos `org_dev_*`, que servem aos testes mas não existem na conta da Clerk). Com `--console <e-mail>`
+  também convida o staff para a aplicação Console, cujo cadastro é restrito a convite.
 
 ## Fase 0 — concluído
 - **US-001** — monorepo pnpm + Turborepo, `packages/config` (tsconfig/eslint/prettier), `packages/platform`
