@@ -5,9 +5,9 @@
 
 ## Estado atual
 - **Fase:** 0 — Fundação
-- **Checkpoint atual:** C5
-- **Branch de trabalho:** `fase-0/c4-console-isolamento-ci`
-- **Próxima story:** US-084 (Railway) — checkpoint C5
+- **Checkpoint atual:** C5 (fim da Fase 0)
+- **Branch de trabalho:** `fase-0/c5-railway`
+- **Próxima story:** Fase 1, marco 1.0 (US-085 spike de domínios, depois US-076/077/080/081)
 - **Última atualização:** 2026-09-22
 
 ## Checkpoints da Fase 0
@@ -17,7 +17,7 @@
 | C2 — Tenancy, banco e eventos | US-070, US-004, US-071, US-005, US-072 | ✅ | `fase-0/c2-tenancy-banco-eventos` |
 | C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ✅ | `fase-0/c3-plataforma-clerk` |
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ | `fase-0/c4-console-isolamento-ci` |
-| C5 — Railway (staging + PR) | US-084 | ⏳ | |
+| C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` |
 
 ## Concluído
 - **US-001** — monorepo pnpm + Turborepo, `packages/config` (tsconfig/eslint/prettier), `packages/platform`
@@ -49,12 +49,17 @@
 - **US-074** — suíte de isolamento que descobre as rotas e prova A↛B, com testes do próprio harness.
 - **US-008** — GitHub Actions: qualidade, testes, OpenAPI em dia, 6 imagens Docker, gitleaks e audit.
 
+- **US-084** — railway.json dos 6 serviços, Dockerfiles (na US-008), runbook de deploy. **Não executado na
+  Railway**: a seção B do checklist está pendente e não há credencial neste ambiente.
+
 ## Bloqueios e pendências
 - `pnpm db:migrate`, `pnpm gen:openapi` e `pnpm gen:sdk` existem como tarefas do Turborepo mas ainda não têm
   implementação em nenhum pacote (chegam em US-004 e na Fase 1) — hoje passam sem executar nada.
 - Dockerfiles e `apps/<app>/railway.json` ficaram fora da US-001 de propósito: são da US-084.
 - Testes que dependam da injeção de dependência do Nest precisarão de um transformador com
   `emitDecoratorMetadata` (SWC) no Vitest — hoje os testes exercitam as classes diretamente.
+- **Checklist §B inteira** (conta Railway Pro, projeto, ambientes, CLI, serviços de dados, bootstrap de roles,
+  shared variables): sem isso o deploy da US-084 não pode ser executado. Runbook pronto em .
 - Checklist §A/§G: **CLERK_WEBHOOK_SIGNING_SECRET** e **CONSOLE_CLERK_WEBHOOK_SIGNING_SECRET** continuam pendentes
   (só existem depois de criar o endpoint no dashboard). Sem eles o adapter recusa webhooks — que é o comportamento
   correto. Proteção do branch `main` e branch `production` também seguem pendentes.
