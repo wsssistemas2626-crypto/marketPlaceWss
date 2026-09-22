@@ -140,7 +140,7 @@ runbook `docs/runbooks/deploy.md`. *Pré-requisitos (você):* checklist seção 
 ---
 ## E00T — Tenancy de produto (Fase 1)
 
-### US-085 [SPIKE] — Domínio próprio de tenant via Cloudflare for SaaS → Railway
+### US-085 [SPIKE] — Domínio próprio de tenant via Cloudflare for SaaS → Railway 🚧 (artefatos prontos; validação real pendente — checklist §C)
 **Objetivo:** provar, antes de construir US-078, que um domínio próprio chega ao storefront certo com HTTPS.
 ```gherkin
 Cenário: domínio próprio resolvido
