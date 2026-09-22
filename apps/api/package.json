@@ -10,39 +10,40 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "db:migrate": "node dist/migrate.js"
+    "db:migrate": "node dist/migrate.js",
+    "gen:openapi": "node dist/openapi.js"
   },
   "dependencies": {
+    "@mkt/adapters-fakes": "workspace:*",
+    "@mkt/adapters-identity-clerk": "workspace:*",
+    "@mkt/contracts": "workspace:*",
+    "@mkt/modules-identity": "workspace:*",
+    "@mkt/modules-integrations": "workspace:*",
+    "@mkt/modules-template": "workspace:*",
+    "@mkt/modules-tenancy": "workspace:*",
     "@mkt/platform": "workspace:*",
+    "@mkt/shared-kernel": "workspace:*",
     "@nestjs/common": "^11.1.6",
     "@nestjs/core": "^11.1.6",
     "@nestjs/platform-express": "^11.1.6",
     "ioredis": "^5.9.0",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
-    "@mkt/shared-kernel": "workspace:*",
-    "@mkt/modules-template": "workspace:*",
-    "@mkt/modules-integrations": "workspace:*",
-    "@mkt/modules-identity": "workspace:*",
-    "@mkt/adapters-identity-clerk": "workspace:*",
-    "@mkt/adapters-fakes": "workspace:*",
-    "@mkt/contracts": "workspace:*",
-    "@mkt/modules-tenancy": "workspace:*"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",
     "@nestjs/cli": "^12.0.3",
-    "@types/node": "^24.10.1",
-    "@types/pg": "^8.15.6",
-    "eslint": "^9.39.1",
-    "tsx": "^4.20.6",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.10",
     "@nestjs/testing": "^11.1.6",
     "@testcontainers/postgresql": "^11.7.1",
     "@testcontainers/redis": "^11.7.1",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "@types/supertest": "^6.0.3",
+    "eslint": "^9.39.1",
     "supertest": "^7.1.4",
-    "@types/supertest": "^6.0.3"
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.10"
   }
 }

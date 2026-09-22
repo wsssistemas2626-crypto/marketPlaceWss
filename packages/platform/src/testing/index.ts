@@ -1,3 +1,4 @@
+export { listControllerRoutes, type ControllerRouteOptions } from './controller-routes.js';
 export {
   audienceOf,
   listRegisteredRoutes,

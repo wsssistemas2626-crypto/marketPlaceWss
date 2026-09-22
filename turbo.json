@@ -1,66 +1,43 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "stream",
-  "globalDependencies": [
-    ".env"
-  ],
-  "globalEnv": [
-    "NODE_ENV",
-    "LOG_LEVEL"
-  ],
+  "globalDependencies": [".env"],
+  "globalEnv": ["NODE_ENV", "LOG_LEVEL"],
   "tasks": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "dev": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "typecheck": {
-      "dependsOn": [
-        "^build"
-      ]
+      "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": [
-        "^build"
-      ],
-      "outputs": [
-        "coverage/**"
-      ]
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"]
     },
     "test:e2e": {
       "cache": false
     },
     "db:migrate": {
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "cache": false
     },
     "gen:openapi": {
-      "cache": false
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["../../docs/api/**"]
     },
     "gen:sdk": {
       "cache": false,
-      "dependsOn": [
-        "gen:openapi"
-      ]
+      "dependsOn": ["gen:openapi"]
     }
   }
 }

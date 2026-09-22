@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import { DiscoveryService } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -8,7 +9,7 @@ import {
   createPool,
   DEVELOPMENT_TENANTS,
   discoverMigrations,
-  listRegisteredRoutes,
+  listControllerRoutes,
   probeCrossTenantAccess,
   runMigrations,
   runWithTenant,
@@ -96,7 +97,10 @@ describe.skipIf(!dockerAvailable)('isolamento entre tenants (e2e)', () => {
     application.useGlobalFilters(new ProblemDetailsFilter());
     await application.init();
 
-    routes = listRegisteredRoutes(application.getHttpAdapter().getInstance());
+    routes = listControllerRoutes(moduleRef.get(DiscoveryService), {
+      globalPrefix: 'v1',
+      excludedFromPrefix: ['health'],
+    });
   }, 300_000);
 
   afterAll(async () => {

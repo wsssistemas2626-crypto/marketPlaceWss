@@ -5,9 +5,9 @@
 
 ## Estado atual
 - **Fase:** 0 — Fundação
-- **Checkpoint atual:** C4
-- **Branch de trabalho:** `fase-0/c3-plataforma-clerk`
-- **Próxima story:** US-075 (módulo tenancy + console) — checkpoint C4
+- **Checkpoint atual:** C5
+- **Branch de trabalho:** `fase-0/c4-console-isolamento-ci`
+- **Próxima story:** US-084 (Railway) — checkpoint C5
 - **Última atualização:** 2026-09-22
 
 ## Checkpoints da Fase 0
@@ -16,7 +16,7 @@
 | C1 — Monorepo de pé | US-001, US-002, US-003 | ✅ | `fase-0/c1-monorepo` |
 | C2 — Tenancy, banco e eventos | US-070, US-004, US-071, US-005, US-072 | ✅ | `fase-0/c2-tenancy-banco-eventos` |
 | C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ✅ | `fase-0/c3-plataforma-clerk` |
-| C4 — Console, isolamento e CI | US-075, US-074, US-008 | ⏳ | |
+| C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ | `fase-0/c4-console-isolamento-ci` |
 | C5 — Railway (staging + PR) | US-084 | ⏳ | |
 
 ## Concluído
@@ -44,6 +44,10 @@
 - **US-073** — ConfigService hierárquico, @RequiresModule e limites de plano.
 - **US-009** — hub de integrações por tenant, credenciais cifradas e fakes de todas as ports.
 - **US-082** — Clerk nos painéis: org_links como fonte da verdade do tenant, guards e webhook.
+
+- **US-075** — registro de tenants em banco, rotas /v1/platform e console listando tenants.
+- **US-074** — suíte de isolamento que descobre as rotas e prova A↛B, com testes do próprio harness.
+- **US-008** — GitHub Actions: qualidade, testes, OpenAPI em dia, 6 imagens Docker, gitleaks e audit.
 
 ## Bloqueios e pendências
 - `pnpm db:migrate`, `pnpm gen:openapi` e `pnpm gen:sdk` existem como tarefas do Turborepo mas ainda não têm

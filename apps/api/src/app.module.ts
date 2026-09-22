@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 
 import { IdentityModule } from '@mkt/modules-identity';
 import { IntegrationsModule } from '@mkt/modules-integrations';
@@ -18,6 +19,8 @@ import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
  */
 @Module({
   imports: [
+    // usado pela geração de OpenAPI e pela suíte de isolamento para enumerar rotas
+    DiscoveryModule,
     InfrastructureModule,
     PlatformModule,
     TenancyModule,

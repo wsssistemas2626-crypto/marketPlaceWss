@@ -16,7 +16,7 @@ Marque `[x]` quando a story atender à Definition of Done do `CLAUDE.md`.
   - *Aceite:* teste de integração prova que (1) rollback da transação não publica evento; (2) evento duplicado é processado uma só vez; (3) falha 5× vai para DLQ.
 - [x] **US-006 [ENABLER] Observabilidade e erros** (P) — pino com redação de PII, OpenTelemetry, `correlation_id`, filtro de exceções → Problem Details (RFC 9457).
 - [x] **US-007 [ENABLER] Idempotência e rate limit** (P) — interceptor `Idempotency-Key` (armazenamento 24 h em Redis/PG) e rate limit por IP/usuário/API key.
-- [ ] **US-008 [ENABLER] CI** (M) — GitHub Actions: lint, typecheck, boundaries, testes (Testcontainers com as roles de `infra/db/`), suíte de isolamento, build de todos os Dockerfiles, gitleaks, scan de dependências, geração/validação de OpenAPI; Lighthouse CI e axe no storefront (a partir da Fase 1). O status do workflow é o que a Railway espera ("Wait for CI").
+- [x] **US-008 [ENABLER] CI** (M) — GitHub Actions: lint, typecheck, boundaries, testes (Testcontainers com as roles de `infra/db/`), suíte de isolamento, build de todos os Dockerfiles, gitleaks, scan de dependências, geração/validação de OpenAPI; Lighthouse CI e axe no storefront (a partir da Fase 1). O status do workflow é o que a Railway espera ("Wait for CI").
 - [x] **US-009 [ENABLER] Hub de configuração e registro de adapters** (M) — módulo `integrations` com registro de providers por categoria **e por tenant**, credenciais criptografadas, resolução do adapter ativo **em tempo de requisição a partir do TenantContext** (não é singleton global), adapters **fake/in-memory** de todas as ports para dev e testes. (RF-INT-01, RNF-MAN-03)
 
 ### Multi-tenancy na fundação (fazer ANTES de US-004/005 terminarem — tudo depende disso)
