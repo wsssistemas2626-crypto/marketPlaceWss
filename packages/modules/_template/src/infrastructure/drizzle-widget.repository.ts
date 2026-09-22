@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 
-import { DATABASE_POOL, useTenantClient, requireTenant, type DatabasePool } from '@mkt/platform';
+import { DATABASE_POOL, TenantAwareRepository, type DatabasePool } from '@mkt/platform';
 import { Money } from '@mkt/shared-kernel';
 
 import type { WidgetRepositoryPort } from '../application/widget-repository.port.js';
@@ -39,13 +39,15 @@ const toDomain = (row: WidgetRow): Widget =>
  * zero linhas (ADR-012).
  */
 @Injectable()
-export class DrizzleWidgetRepository implements WidgetRepositoryPort {
-  constructor(@Inject(DATABASE_POOL) private readonly pool: DatabasePool) {}
+export class DrizzleWidgetRepository extends TenantAwareRepository implements WidgetRepositoryPort {
+  constructor(@Inject(DATABASE_POOL) pool: DatabasePool) {
+    super(pool);
+  }
 
   async save(widget: Widget): Promise<void> {
     const snapshot = widget.toSnapshot();
 
-    await useTenantClient(this.pool, async (client) => {
+    await this.withTenant(async (client) => {
       await drizzle(client)
         .insert(widgets)
         .values({
@@ -69,7 +71,7 @@ export class DrizzleWidgetRepository implements WidgetRepositoryPort {
   }
 
   async findBySlug(slug: string): Promise<Widget | undefined> {
-    return useTenantClient(this.pool, async (client) => {
+    return this.withTenant(async (client) => {
       const rows = await drizzle(client).select().from(widgets).where(eq(widgets.slug, slug)).limit(1);
       const row = rows[0];
       return row === undefined ? undefined : toDomain(row);
@@ -77,14 +79,9 @@ export class DrizzleWidgetRepository implements WidgetRepositoryPort {
   }
 
   async list(limit: number): Promise<Widget[]> {
-    return useTenantClient(this.pool, async (client) => {
+    return this.withTenant(async (client) => {
       const rows = await drizzle(client).select().from(widgets).orderBy(desc(widgets.createdAt)).limit(limit);
       return rows.map(toDomain);
     });
-  }
-
-  /** Tenant do contexto — exposto para o caso de uso montar o agregado. */
-  currentTenantId(): string {
-    return requireTenant().tenantId;
   }
 }

@@ -87,7 +87,7 @@ Cenário: host desconhecido ou tenant suspenso
 ```
 ADR-012 · `arquitetura/06-multi-tenancy.md` §2 · RNF-TEN-01
 
-### US-071 [ENABLER] — RLS e repositório tenant-aware
+### US-071 [ENABLER] — RLS e repositório tenant-aware ✅
 ```gherkin
 Cenário: filtro automático
   Dado ofertas dos tenants A e B

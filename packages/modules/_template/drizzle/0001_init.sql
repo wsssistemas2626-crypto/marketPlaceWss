@@ -35,5 +35,5 @@ ALTER TABLE template.widgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE template.widgets FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS tenant_isolation ON template.widgets;
 CREATE POLICY tenant_isolation ON template.widgets
-  USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
-  WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+  USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);

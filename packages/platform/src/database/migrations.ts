@@ -30,6 +30,23 @@ CREATE TABLE IF NOT EXISTS platform.schema_migrations (
  * Lê as migrações de todos os módulos: `packages/modules/<modulo>/drizzle/*.sql`,
  * em ordem lexicográfica dentro de cada módulo (por isso o prefixo numérico).
  */
+async function readSqlDirectory(directory: string, moduleName: string): Promise<Migration[]> {
+  let files: string[];
+  try {
+    files = (await readdir(directory)).filter((file) => file.endsWith('.sql')).sort();
+  } catch {
+    return [];
+  }
+
+  return Promise.all(
+    files.map(async (name) => ({
+      module: moduleName,
+      name,
+      sql: await readFile(path.join(directory, name), 'utf8'),
+    })),
+  );
+}
+
 export async function discoverMigrations(repositoryRoot: string): Promise<Migration[]> {
   const modulesDir = path.join(repositoryRoot, 'packages', 'modules');
 
@@ -40,26 +57,17 @@ export async function discoverMigrations(repositoryRoot: string): Promise<Migrat
       .map((entry) => entry.name)
       .sort();
   } catch {
-    return [];
+    moduleDirs = [];
   }
 
-  const migrations: Migration[] = [];
-  for (const moduleName of moduleDirs) {
-    const migrationsDir = path.join(modulesDir, moduleName, 'drizzle');
-    let files: string[];
-    try {
-      files = (await readdir(migrationsDir)).filter((file) => file.endsWith('.sql')).sort();
-    } catch {
-      continue;
-    }
+  // o schema `platform` vem primeiro: os módulos contam com ele
+  const migrations: Migration[] = await readSqlDirectory(
+    path.join(repositoryRoot, 'packages', 'platform', 'drizzle'),
+    'platform',
+  );
 
-    for (const name of files) {
-      migrations.push({
-        module: moduleName,
-        name,
-        sql: await readFile(path.join(migrationsDir, name), 'utf8'),
-      });
-    }
+  for (const moduleName of moduleDirs) {
+    migrations.push(...(await readSqlDirectory(path.join(modulesDir, moduleName, 'drizzle'), moduleName)));
   }
 
   return migrations;

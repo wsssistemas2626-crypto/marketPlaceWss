@@ -38,6 +38,11 @@ export function createModuleSchemaSql(moduleName: string): string {
  * `FORCE ROW LEVEL SECURITY` é o que faz a policy valer **também para o dono
  * da tabela**; sem ele, uma conexão do `migrator` leria tudo. A policy usa
  * `current_setting('app.tenant_id', true)`, definido por `withTenantTx`.
+ *
+ * O `NULLIF` não é detalhe: fora de um `withTenantTx` o setting vem como
+ * string vazia e `''::uuid` lançaria "invalid input syntax for type uuid".
+ * Com ele a comparação vira NULL — a consulta devolve zero linhas e o INSERT
+ * falha como violação de RLS, que é o comportamento que a US-071 exige.
  */
 export function enableTenantRlsSql(schemaName: string, tableName: string): string {
   const schema = assertIdentifier(schemaName, 'schemaName');
@@ -49,7 +54,7 @@ export function enableTenantRlsSql(schemaName: string, tableName: string): strin
     `ALTER TABLE ${qualified} FORCE ROW LEVEL SECURITY;`,
     `DROP POLICY IF EXISTS tenant_isolation ON ${qualified};`,
     `CREATE POLICY tenant_isolation ON ${qualified}`,
-    `  USING (tenant_id = current_setting('app.tenant_id', true)::uuid)`,
-    `  WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);`,
+    `  USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)`,
+    `  WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);`,
   ].join('\n');
 }
