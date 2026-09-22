@@ -142,12 +142,53 @@ describe.skipIf(!dockerAvailable)('outbox e consumidor idempotente (integração
 
       let resultado = { published: 0, deadLettered: 0, failed: 0 };
       for (let tentativa = 0; tentativa < 5; tentativa += 1) {
-        resultado = await relayOutboxBatch(platformPool, bus, { schemas: ['template'], maxAttempts: 5 });
+        // maxBackoffSeconds: 0 desliga o adiamento só para o teste não esperar
+        resultado = await relayOutboxBatch(platformPool, bus, {
+          schemas: ['template'],
+          maxAttempts: 5,
+          maxBackoffSeconds: 0,
+        });
       }
 
       expect(resultado.deadLettered).toBe(1);
       expect(bus.deadLettered).toHaveLength(1);
       expect(bus.published.every((event) => event.id !== id)).toBe(true);
+    });
+
+    it('adia a nova tentativa depois de uma falha (backoff)', async () => {
+      const bus = new InMemoryEventBus();
+      const id = Id.create(clock);
+
+      await withTenantTx(
+        appPool,
+        (client) =>
+          client.query(
+            `INSERT INTO template.outbox (id, tenant_id, type, payload)
+             VALUES ($1, $2, 'template.widget.created', $3)`,
+            [id, TENANT_A, JSON.stringify({ specversion: '1.0', tambem_quebrado: true })],
+          ),
+        TENANT_A,
+      );
+
+      // primeira passada falha e agenda a próxima para daqui a alguns segundos
+      const primeira = await relayOutboxBatch(platformPool, bus, { schemas: ['template'] });
+      expect(primeira.failed).toBe(1);
+
+      // a segunda passada, imediata, nem pega o registro — é isso que impede
+      // uma queda curta do barramento de esvaziar as tentativas em segundos
+      const segunda = await relayOutboxBatch(platformPool, bus, { schemas: ['template'] });
+      expect(segunda).toEqual({ published: 0, deadLettered: 0, failed: 0 });
+
+      const agendado = await withTenantTx(
+        appPool,
+        (client) =>
+          client.query<{ next_attempt_at: Date | null }>(
+            'SELECT next_attempt_at FROM template.outbox WHERE id = $1',
+            [id],
+          ),
+        TENANT_A,
+      );
+      expect(agendado.rows[0]?.next_attempt_at).not.toBeNull();
     });
   });
 

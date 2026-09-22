@@ -10,6 +10,8 @@ export interface RelayOptions {
   readonly batchSize?: number;
   /** Tentativas antes de mandar para a DLQ. */
   readonly maxAttempts?: number;
+  /** Teto do backoff entre tentativas, em segundos. */
+  readonly maxBackoffSeconds?: number;
 }
 
 export interface RelayResult {
@@ -43,6 +45,7 @@ export async function relayOutboxBatch(
 ): Promise<RelayResult> {
   const batchSize = options.batchSize ?? 50;
   const maxAttempts = options.maxAttempts ?? 5;
+  const maxBackoffSeconds = options.maxBackoffSeconds ?? 300;
 
   let published = 0;
   let deadLettered = 0;
@@ -54,6 +57,7 @@ export async function relayOutboxBatch(
         `SELECT id, payload, attempts
            FROM ${schema}.outbox
           WHERE published_at IS NULL
+            AND (next_attempt_at IS NULL OR next_attempt_at <= now())
           ORDER BY created_at
           LIMIT $1
             FOR UPDATE SKIP LOCKED`,
@@ -79,11 +83,19 @@ export async function relayOutboxBatch(
             );
             deadLettered += 1;
           } else {
-            await client.query(`UPDATE ${schema}.outbox SET attempts = $2, last_error = $3 WHERE id = $1`, [
-              row.id,
-              attempts,
-              message,
-            ]);
+            // backoff exponencial: o relay varre a cada segundo, então sem
+            // adiar a próxima tentativa uma indisponibilidade curta do
+            // barramento gastaria as 5 tentativas em 5 segundos e mandaria
+            // eventos perfeitamente válidos para a DLQ
+            const delaySeconds = Math.min(2 ** attempts, maxBackoffSeconds);
+            await client.query(
+              `UPDATE ${schema}.outbox
+                  SET attempts = $2,
+                      last_error = $3,
+                      next_attempt_at = now() + make_interval(secs => $4)
+                WHERE id = $1`,
+              [row.id, attempts, message, delaySeconds],
+            );
             failed += 1;
           }
         }

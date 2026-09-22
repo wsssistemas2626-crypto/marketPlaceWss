@@ -62,12 +62,14 @@ CREATE TABLE IF NOT EXISTS ${schemaName}.outbox (
   created_at timestamptz NOT NULL DEFAULT now(),
   published_at timestamptz,
   attempts int NOT NULL DEFAULT 0,
-  last_error text
+  last_error text,
+  -- adia a próxima tentativa depois de uma falha (backoff exponencial)
+  next_attempt_at timestamptz
 );
 
 -- o relay varre só o que falta publicar
 CREATE INDEX IF NOT EXISTS ${schemaName}_outbox_pending_idx
-  ON ${schemaName}.outbox (created_at) WHERE published_at IS NULL;
+  ON ${schemaName}.outbox (next_attempt_at NULLS FIRST, created_at) WHERE published_at IS NULL;
 
 ALTER TABLE ${schemaName}.outbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ${schemaName}.outbox FORCE ROW LEVEL SECURITY;
