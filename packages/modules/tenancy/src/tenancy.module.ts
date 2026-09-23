@@ -21,7 +21,9 @@ import {
   type TransactionPort,
   type WorkforceProvisioningPort,
 } from './application/provision-tenant.js';
+import { PanelBrandingService } from './application/panel-branding.js';
 import { TENANT_REGISTRY, type TenantRegistryPort } from './application/tenant-registry.js';
+import { AdminBrandingController, SellerBrandingController } from './http/panel-branding.controller.js';
 import { AdminSupportController, PlatformSupportController } from './http/support-mode.controller.js';
 import { AdminThemeController, StoreThemeController } from './http/theme.controller.js';
 import { PlatformTenantsController } from './http/platform-tenants.controller.js';
@@ -76,6 +78,8 @@ export class TenancyModule {
         StoreThemeController,
         PlatformSupportController,
         AdminSupportController,
+        AdminBrandingController,
+        SellerBrandingController,
       ],
       providers: [
         DbTenantDirectory,
@@ -113,6 +117,12 @@ export class TenancyModule {
           provide: ThemeService,
           useFactory: (repository: ThemeRepositoryPort) => new ThemeService(repository),
           inject: [THEME_REPOSITORY],
+        },
+        {
+          provide: PanelBrandingService,
+          useFactory: (themes: ThemeService, registry: TenantRegistryPort) =>
+            new PanelBrandingService(themes, registry),
+          inject: [ThemeService, TENANT_REGISTRY],
         },
         {
           provide: TENANT_REGISTRY,

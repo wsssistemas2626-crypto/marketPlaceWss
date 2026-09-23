@@ -41,7 +41,15 @@ export const CLERK_SYSTEM_PERMISSIONS = {
  */
 export const CLERK_ADMIN_ROLE = 'org:admin';
 
+/**
+ * Entrar no painel: marca do tenant, seletor de organização. Todo papel tem.
+ * Existe porque as permissões de sistema (`org:sys_*`) **não** vêm no token
+ * de sessão — não servem para o `@Requires` de uma rota que todos acessam.
+ */
+export const PANEL_ACCESS_PERMISSION = 'org:panel:read';
+
 export const PANEL_PERMISSIONS: readonly PanelPermission[] = [
+  { key: PANEL_ACCESS_PERMISSION, name: 'Acessar o painel', description: 'Entrar no painel e ver a marca.' },
   // organização do tenant
   {
     key: 'org:settings:read',
@@ -103,6 +111,7 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     name: 'Administrador do marketplace',
     description: 'Todas as permissões do tenant, inclusive integrações e equipe.',
     permissions: [
+      PANEL_ACCESS_PERMISSION,
       'org:settings:read',
       'org:settings:manage',
       'org:integrations:manage',
@@ -123,7 +132,7 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     kind: 'tenant',
     name: 'Moderação',
     description: 'Modera catálogo e avalia sellers.',
-    permissions: ['org:catalog:moderate', 'org:sellers:review', readMembers],
+    permissions: [PANEL_ACCESS_PERMISSION, 'org:catalog:moderate', 'org:sellers:review', readMembers],
     requiresMfa: false,
   },
   {
@@ -131,7 +140,7 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     kind: 'tenant',
     name: 'Atendimento',
     description: 'Consulta e atende pedidos.',
-    permissions: ['org:orders:read', 'org:orders:support', readMembers],
+    permissions: [PANEL_ACCESS_PERMISSION, 'org:orders:read', 'org:orders:support', readMembers],
     requiresMfa: false,
   },
   {
@@ -139,7 +148,13 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     kind: 'tenant',
     name: 'Financeiro',
     description: 'Extratos, repasses e ajustes financeiros.',
-    permissions: ['org:finance:read', 'org:finance:manage', 'org:orders:read', readMembers],
+    permissions: [
+      PANEL_ACCESS_PERMISSION,
+      'org:finance:read',
+      'org:finance:manage',
+      'org:orders:read',
+      readMembers,
+    ],
     requiresMfa: true,
   },
   {
@@ -148,6 +163,7 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     name: 'Dono da loja',
     description: 'Todas as permissões do seller, inclusive dados bancários e equipe.',
     permissions: [
+      PANEL_ACCESS_PERMISSION,
       'org:catalog:read',
       'org:catalog:manage',
       'org:offers:manage',
@@ -167,7 +183,13 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     kind: 'seller',
     name: 'Catálogo',
     description: 'Produtos e ofertas da loja.',
-    permissions: ['org:catalog:read', 'org:catalog:manage', 'org:offers:manage', readMembers],
+    permissions: [
+      PANEL_ACCESS_PERMISSION,
+      'org:catalog:read',
+      'org:catalog:manage',
+      'org:offers:manage',
+      readMembers,
+    ],
     requiresMfa: false,
   },
   {
@@ -175,7 +197,13 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     kind: 'seller',
     name: 'Pedidos',
     description: 'Pedidos e envios da loja.',
-    permissions: ['org:catalog:read', 'org:orders:manage', 'org:shipping:manage', readMembers],
+    permissions: [
+      PANEL_ACCESS_PERMISSION,
+      'org:catalog:read',
+      'org:orders:manage',
+      'org:shipping:manage',
+      readMembers,
+    ],
     requiresMfa: false,
   },
   {
@@ -183,7 +211,7 @@ export const PANEL_ROLES: readonly PanelRole[] = [
     kind: 'seller',
     name: 'Financeiro da loja',
     description: 'Extrato e saldo da loja.',
-    permissions: ['org:finance:read', readMembers],
+    permissions: [PANEL_ACCESS_PERMISSION, 'org:finance:read', readMembers],
     requiresMfa: false,
   },
 ];

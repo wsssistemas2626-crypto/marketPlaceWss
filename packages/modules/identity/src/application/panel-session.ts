@@ -100,7 +100,7 @@ export function toPanelSession(token: VerifiedPanelToken, link: OrgLink | undefi
   if (link === undefined || link.status !== 'active') {
     throw new OrganizationNotLinkedError();
   }
-  if (link.kind !== token.organizationKind) {
+  if (token.organizationKind !== undefined && link.kind !== token.organizationKind) {
     throw new WrongOrganizationKindError();
   }
   if (token.tenantId !== undefined && token.tenantId !== link.tenantId) {

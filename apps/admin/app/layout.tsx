@@ -3,6 +3,8 @@ import { ptBR } from '@clerk/localizations';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
+import { Cabecalho } from './cabecalho';
+
 export const metadata: Metadata = {
   title: 'Admin do tenant',
   description: 'Admin do tenant da plataforma de marketplace.',
@@ -22,7 +24,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       afterSignOutUrl="/sign-in"
     >
       <html lang="pt-BR">
-        <body>{children}</body>
+        <body style={{ margin: 0 }}>
+          <Cabecalho />
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

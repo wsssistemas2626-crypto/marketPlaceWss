@@ -206,3 +206,26 @@ describe('console: todo staff precisa de segundo fator (RF-IAM-14)', () => {
     expect(guard.canActivate(contextoCom({ userId: 'staff', secondFactorVerified: true }))).toBe(true);
   });
 });
+
+describe('tipo da organização vem do vínculo (US-083)', () => {
+  const vinculoSeller: OrgLink = {
+    clerkOrgId: 'org_seller',
+    kind: 'seller',
+    tenantId: lojaA.tenantId,
+    sellerId: '0193a000-0000-7000-8000-000000000500',
+    status: 'active',
+  };
+
+  it('token sem `org_kind` (instância sem template de sessão) vale o tipo do vínculo', () => {
+    const { organizationKind: _semTipo, ...semTipo } = tokenTenant({
+      organizationId: 'org_seller',
+      roles: ['org:seller_owner'],
+      permissions: ['org:orders:manage'],
+    });
+
+    const sessao = toPanelSession(semTipo, vinculoSeller);
+
+    expect(sessao.kind).toBe('seller');
+    expect(sessao.roles).toEqual(['org:seller_owner']);
+  });
+});

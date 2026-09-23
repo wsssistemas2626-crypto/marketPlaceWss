@@ -100,7 +100,8 @@ export function panelTokenFromClaims(
   return {
     userId: claims.sub,
     organizationId: organizationId ?? 'console',
-    organizationKind: claims.org_kind ?? 'tenant',
+    // sem template de sessão não há `org_kind`: supor "tenant" recusaria toda organização de seller
+    ...(claims.org_kind === undefined ? {} : { organizationKind: claims.org_kind }),
     ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
     ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
     roles: papel === undefined ? [] : [normalizarPapel(papel)],

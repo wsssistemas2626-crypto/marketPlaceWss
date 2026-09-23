@@ -161,7 +161,11 @@ export type OrganizationKind = 'tenant' | 'seller';
 export interface VerifiedPanelToken {
   readonly userId: string;
   readonly organizationId: string;
-  readonly organizationKind: OrganizationKind;
+  /**
+   * Tipo declarado no token (template de sessão). Atalho opcional: quem decide
+   * é o vínculo no banco — ausente, vale o vínculo; presente e divergente, recusa.
+   */
+  readonly organizationKind?: OrganizationKind;
   readonly tenantId?: string;
   readonly sellerId?: string;
   readonly roles: readonly string[];

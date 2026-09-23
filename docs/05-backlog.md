@@ -157,7 +157,7 @@ Cenário: tentativa de falsificar o host
 Entregáveis: Cloudflare Worker versionado em `infra/cloudflare/`, adapter `domains-cloudflare` (`DomainProvisioningPort`),
 relatório em `docs/spikes/US-085.md` com a conclusão (seguir / ajustar / alternativa Vercel). Timebox: 2 dias.
 
-- [ ] **US-083 — Seletor de organização e marca no painel** (P) — RF-IAM-15.
+- [x] **US-083 — Seletor de organização e marca no painel** (P) — RF-IAM-15.
 
 ### US-076 — Provisionar tenant ✅
 **Como** staff da plataforma **eu quero** criar um novo marketplace **para que** o cliente comece a operar.
