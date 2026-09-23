@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { bigint, boolean, jsonb, pgSchema, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const tenancySchema = pgSchema('tenancy');
 
@@ -37,3 +37,45 @@ export const tenantSettings = tenancySchema.table('tenant_settings', {
   value: jsonb('value').notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const provisioningSteps = tenancySchema.table(
+  'provisioning_steps',
+  {
+    tenantId: uuid('tenant_id').notNull(),
+    step: text('step').notNull(),
+    status: text('status').notNull(),
+    detail: text('detail'),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.tenantId, table.step] })],
+);
+
+export const themes = tenancySchema.table('themes', {
+  tenantId: uuid('tenant_id').primaryKey(),
+  draft: jsonb('draft').notNull(),
+  published: jsonb('published'),
+  publishedAt: timestamp('published_at', { withTimezone: true }),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const supportSessions = tenancySchema.table('support_sessions', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  staffUserId: text('staff_user_id').notNull(),
+  reason: text('reason').notNull(),
+  scope: text('scope').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const tenantUsage = tenancySchema.table(
+  'tenant_usage',
+  {
+    tenantId: uuid('tenant_id').notNull(),
+    metric: text('metric').notNull(),
+    value: bigint('value', { mode: 'number' }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.tenantId, table.metric] })],
+);

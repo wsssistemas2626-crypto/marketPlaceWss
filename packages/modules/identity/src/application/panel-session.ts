@@ -59,8 +59,12 @@ export interface PanelSession {
   readonly kind: OrganizationKind;
   readonly tenantId: string;
   readonly sellerId?: string;
+  readonly roles: readonly string[];
   readonly permissions: readonly string[];
 }
+
+/** Papel que administra a organização: na Clerk ele detém todas as permissões dela. */
+export const ORG_ADMIN_ROLE = 'org:admin';
 
 /**
  * Transforma um token verificado em sessão de painel.
@@ -90,6 +94,7 @@ export function toPanelSession(token: VerifiedPanelToken, link: OrgLink | undefi
     kind: link.kind,
     tenantId: link.tenantId,
     ...(link.sellerId === undefined ? {} : { sellerId: link.sellerId }),
+    roles: token.roles,
     permissions: token.permissions,
   };
 }
@@ -98,6 +103,15 @@ export function assertKind(session: PanelSession, expected: OrganizationKind): v
   if (session.kind !== expected) throw new WrongOrganizationKindError();
 }
 
+/**
+ * Confere a permissão exigida pela rota.
+ *
+ * O papel `org:admin` passa mesmo sem a permissão listada: na Clerk ele detém
+ * todas as permissões da organização, e o token só enumera as que o papel
+ * recebeu explicitamente — um admin de tenant ficaria trancado para fora do
+ * próprio painel. Qualquer outro papel precisa da permissão no token.
+ */
 export function assertPermission(session: PanelSession, permission: string): void {
+  if (session.roles.includes(ORG_ADMIN_ROLE)) return;
   if (!session.permissions.includes(permission)) throw new MissingPermissionError(permission);
 }

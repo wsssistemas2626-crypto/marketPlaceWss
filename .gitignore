@@ -15,3 +15,6 @@ test-results/
 .vscode/*
 !.vscode/extensions.json
 *.tsbuildinfo
+
+# raiz de CA exportada da máquina local (inspeção de TLS por antivírus/proxy)
+.certs/

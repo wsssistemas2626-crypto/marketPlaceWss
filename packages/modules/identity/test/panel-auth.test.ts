@@ -214,6 +214,7 @@ describe('PanelAuthGuard', () => {
     kind: 'seller' as const,
     tenantId: lojaA.tenantId,
     sellerId: SELLER,
+    roles: ['org:member'],
     permissions: ['org:orders:manage'],
     ...extra,
   });
@@ -244,6 +245,14 @@ describe('PanelAuthGuard', () => {
     expect(() => guard.canActivate(contextoCom(sessaoDe({ permissions: ['org:catalog:read'] })))).toThrow(
       MissingPermissionError,
     );
+  });
+
+  it('admin da organização passa sem a permissão listada', () => {
+    // o token v2 da Clerk só enumera permissões atribuídas explicitamente;
+    // trancar o admin para fora do próprio painel seria pior que inútil
+    const sessao = sessaoDe({ roles: ['org:admin'], permissions: [] });
+
+    expect(guard.canActivate(contextoCom(sessao))).toBe(true);
   });
 
   it('rota sem @PanelAuth passa direto', () => {

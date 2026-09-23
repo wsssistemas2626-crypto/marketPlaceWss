@@ -21,12 +21,86 @@ export interface ClerkAdapterOptions {
 
 interface SessionClaims {
   sub?: string;
+  /** Claims v1 (formato antigo do token de sessão). */
   org_id?: string;
-  org_kind?: OrganizationKind;
   org_role?: string;
   org_permissions?: string[];
+  /** Claims v2: a organização ativa vem aninhada e o papel vem sem prefixo. */
+  v?: number;
+  o?: { id?: string; rol?: string; slg?: string; per?: string; fpm?: string };
+  fea?: string;
+  /** Vêm do template de sessão, quando configurado — atalho, nunca fonte da verdade. */
+  org_kind?: OrganizationKind;
   tenant_id?: string;
   seller_id?: string;
+}
+
+/** Papel sempre no formato `org:<papel>`, venha ele de v1 (`org:admin`) ou de v2 (`admin`). */
+const normalizarPapel = (papel: string): string => (papel.startsWith('org:') ? papel : `org:${papel}`);
+
+/**
+ * Permissões do token v2.
+ *
+ * O formato é compacto para caber no cookie: `fea` lista as funcionalidades
+ * (com escopo `o:` para organização), `o.per` lista os verbos e `o.fpm` traz,
+ * para cada funcionalidade, um bitmask dizendo quais verbos valem. O resultado
+ * é remontado no formato `org:<funcionalidade>:<verbo>`, o mesmo que o
+ * `@Requires` usa.
+ */
+export function expandPermissions(claims: SessionClaims): string[] {
+  if (claims.org_permissions !== undefined) return claims.org_permissions;
+
+  const funcionalidades = (claims.fea ?? '')
+    .split(',')
+    .map((parte) => parte.trim())
+    .filter((parte) => parte.startsWith('o:'))
+    .map((parte) => parte.slice(2));
+
+  const verbos = (claims.o?.per ?? '')
+    .split(',')
+    .map((verbo) => verbo.trim())
+    .filter((verbo) => verbo !== '');
+
+  const mascaras = (claims.o?.fpm ?? '').split(',').map((mascara) => Number.parseInt(mascara.trim(), 10));
+
+  return funcionalidades.flatMap((funcionalidade, indice) => {
+    const mascara = mascaras[indice];
+    if (mascara === undefined || Number.isNaN(mascara)) return [];
+
+    return verbos
+      .filter((_, posicao) => (mascara & (1 << posicao)) !== 0)
+      .map((verbo) => `org:${funcionalidade}:${verbo}`);
+  });
+}
+
+/**
+ * Traduz as claims verificadas para o formato do nosso port.
+ *
+ * Existe separada do `verifyToken` para ser testável sem rede: é aqui que mora
+ * a diferença entre as duas versões de token da Clerk, que já custou um 401 em
+ * todo o painel quando a instância passou a emitir v2.
+ */
+export function panelTokenFromClaims(
+  claims: SessionClaims,
+  options: { requireOrganization?: boolean } = {},
+): VerifiedPanelToken {
+  const organizationId = claims.o?.id ?? claims.org_id;
+  const papel = claims.o?.rol ?? claims.org_role;
+
+  if (claims.sub === undefined) throw new Error('Token sem usuário');
+  if (options.requireOrganization !== false && organizationId === undefined) {
+    throw new Error('Token sem organização ativa');
+  }
+
+  return {
+    userId: claims.sub,
+    organizationId: organizationId ?? 'console',
+    organizationKind: claims.org_kind ?? 'tenant',
+    ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
+    ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
+    roles: papel === undefined ? [] : [normalizarPapel(papel)],
+    permissions: expandPermissions(claims),
+  };
 }
 
 /**
@@ -54,20 +128,11 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
       authorizedParties: [...this.options.authorizedParties],
     })) as SessionClaims;
 
-    if (claims.sub === undefined) throw new Error('Token sem usuário');
-    if (this.options.requireOrganization !== false && claims.org_id === undefined) {
-      throw new Error('Token sem organização ativa');
-    }
-
-    return {
-      userId: claims.sub,
-      organizationId: claims.org_id ?? 'console',
-      organizationKind: claims.org_kind ?? 'tenant',
-      ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
-      ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
-      roles: claims.org_role === undefined ? [] : [claims.org_role],
-      permissions: claims.org_permissions ?? [],
-    };
+    return panelTokenFromClaims(claims, {
+      ...(this.options.requireOrganization === undefined
+        ? {}
+        : { requireOrganization: this.options.requireOrganization }),
+    });
   }
 
   async createOrganization(input: {
@@ -75,9 +140,15 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
     kind: OrganizationKind;
     tenantId: string;
     sellerId?: string;
+    /** Slug — só quando a instância tem slugs habilitados; opcional na Clerk. */
+    slug?: string;
+    /** Dono inicial; sem ele a organização nasce sem nenhum membro. */
+    createdBy?: string;
   }): Promise<{ organizationId: string }> {
     const organization = await this.client.organizations.createOrganization({
       name: input.name,
+      ...(input.slug === undefined ? {} : { slug: input.slug }),
+      ...(input.createdBy === undefined ? {} : { createdBy: input.createdBy }),
       publicMetadata: {
         kind: input.kind,
         tenantId: input.tenantId,
@@ -86,6 +157,103 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
     });
 
     return { organizationId: organization.id };
+  }
+
+  /**
+   * Procura a organização de um tenant (ou de um seller) pelos metadados.
+   *
+   * A busca é pelo `publicMetadata`, não pelo slug: slug é opcional na Clerk e
+   * pode estar **desabilitado** na instância (`organization_slugs_disabled`),
+   * enquanto `tenantId`/`kind` sempre existem em organização criada por nós.
+   */
+  async findOrganizationByTenant(criterio: {
+    kind: OrganizationKind;
+    tenantId: string;
+    sellerId?: string;
+  }): Promise<{ organizationId: string; name: string } | undefined> {
+    const paginas = 5;
+    const porPagina = 100;
+
+    for (let pagina = 0; pagina < paginas; pagina += 1) {
+      const { data } = await this.client.organizations.getOrganizationList({
+        limit: porPagina,
+        offset: pagina * porPagina,
+      });
+
+      const encontrada = data.find((candidata) => {
+        const metadata = candidata.publicMetadata as {
+          kind?: string;
+          tenantId?: string;
+          sellerId?: string;
+        };
+
+        return (
+          metadata.kind === criterio.kind &&
+          metadata.tenantId === criterio.tenantId &&
+          metadata.sellerId === criterio.sellerId
+        );
+      });
+
+      if (encontrada !== undefined) {
+        return { organizationId: encontrada.id, name: encontrada.name };
+      }
+
+      if (data.length < porPagina) return undefined;
+    }
+
+    return undefined;
+  }
+
+  /** Garante que o usuário é membro da organização; já sendo, não faz nada. */
+  async ensureMembership(input: {
+    organizationId: string;
+    userId: string;
+    role?: string;
+  }): Promise<'created' | 'already_member'> {
+    const { data } = await this.client.organizations.getOrganizationMembershipList({
+      organizationId: input.organizationId,
+      limit: 100,
+    });
+
+    if (data.some((membership) => membership.publicUserData?.userId === input.userId)) {
+      return 'already_member';
+    }
+
+    await this.client.organizations.createOrganizationMembership({
+      organizationId: input.organizationId,
+      userId: input.userId,
+      role: input.role ?? 'org:admin',
+    });
+
+    return 'created';
+  }
+
+  /**
+   * Usuário da instância: o do e-mail informado ou, sem e-mail, o primeiro
+   * cadastrado (em desenvolvimento, quem criou a conta).
+   */
+  async findUser(email?: string): Promise<{ userId: string; email?: string } | undefined> {
+    const { data } = await this.client.users.getUserList(
+      email === undefined ? { limit: 1, orderBy: '+created_at' } : { emailAddress: [email], limit: 1 },
+    );
+
+    const user = data[0];
+    if (user === undefined) return undefined;
+
+    const primeiro = user.emailAddresses[0]?.emailAddress;
+    return { userId: user.id, ...(primeiro === undefined ? {} : { email: primeiro }) };
+  }
+
+  /**
+   * Convite para a aplicação inteira (não para uma organização): é o caminho
+   * de entrada do staff no Console, onde o cadastro é restrito a convite.
+   */
+  async inviteToApplication(email: string, redirectUrl?: string): Promise<void> {
+    await this.client.invitations.createInvitation({
+      emailAddress: email,
+      ...(redirectUrl === undefined ? {} : { redirectUrl }),
+      ignoreExisting: true,
+    });
   }
 
   async updateOrganizationMetadata(

@@ -16,6 +16,8 @@ export interface ProvisionTenantInput {
   readonly planId?: string;
   /** Host do storefront; o padrão é `{slug}.{PLATFORM_ROOT_DOMAIN}`. */
   readonly hostname?: string;
+  /** Status inicial. O provisionamento (US-076) começa em `provisioning`. */
+  readonly status?: TenantStatus;
 }
 
 /**

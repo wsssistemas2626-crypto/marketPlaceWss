@@ -4,10 +4,10 @@
 > e termina atualizando-o. Você (humano) pode editar a seção "Instruções do humano" a qualquer momento.
 
 ## Estado atual
-- **Fase:** 0 — Fundação
-- **Checkpoint atual:** C5 (fim da Fase 0)
-- **Branch de trabalho:** `fase-0/c5-railway`
-- **Próxima story:** Fase 1, marco 1.0 (US-085 spike de domínios, depois US-076/077/080/081)
+- **Fase:** 1 — MVP transacional
+- **Marco atual:** 1.0 — Tenancy de produto (concluído)
+- **Branch de trabalho:** `fase-1/m10-tenancy-de-produto` (PR #6)
+- **Próxima story:** marco 1.1 — identidade (US-013, US-083, US-010, US-012, US-014)
 - **Última atualização:** 2026-09-22
 
 ## Checkpoints da Fase 0
@@ -19,7 +19,19 @@
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ CI verde | PR #4 |
 | C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` (PR #5) |
 
-## Concluído
+## Fase 1 — marco 1.0 (concluído — PR #6)
+- **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação
+  real depende do domínio e da conta (checklist §C). Relatório em `docs/spikes/US-085.md`.
+- **US-076** — provisionamento idempotente por etapas, orquestrado por evento, com seed confirmado pelos módulos.
+- **US-077** — tema do tenant (rascunho × publicado) aplicado no storefront; tela `/tema` no admin com preview.
+- **US-080** — suspensão com máquina de estados e modo suporte auditado: ações no console (detalhe do tenant)
+  e histórico em `/suporte` no admin do tenant.
+- **US-081** — projeção de uso por eventos e saúde de integrações no console.
+- **`pnpm link:orgs`** — liga as organizações reais da Clerk aos tenants de desenvolvimento (o seed cria
+  vínculos `org_dev_*`, que servem aos testes mas não existem na conta da Clerk). Com `--console <e-mail>`
+  também convida o staff para a aplicação Console, cujo cadastro é restrito a convite.
+
+## Fase 0 — concluído
 - **US-001** — monorepo pnpm + Turborepo, `packages/config` (tsconfig/eslint/prettier), `packages/platform`
   (primitivas de health), apps `api`/`worker` (NestJS) e `storefront`/`admin`/`seller-center`/`console` (Next.js
   standalone), `docker-compose.yml` com postgres+roles, redis `noeviction`, meilisearch, mailpit e minio.
@@ -76,6 +88,18 @@
 - **ADR-015 (Proposto)**: fronteiras verificadas com regras nativas do ESLint em vez de `eslint-plugin-boundaries`.
   O plugin 7.2.0 não acusou `@nestjs/common` dentro de `domain/` e a API nova não está documentada offline.
   **Precisa da sua aprovação** (ou da escolha por dependency-cruiser).
+- **Antivírus com inspeção de TLS (Norton) quebra o login dos painéis**: o sandbox de *edge runtime* do Next usa a
+  lista de CAs embutida, não a do Windows, então o middleware da Clerk falhava ao buscar o JWKS
+  (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`), a sessão era lida como deslogada e o login entrava em laço —
+  `/` → `/sign-in` → "já está logado" → `/`. `pnpm ca:local` exporta a raiz da máquina para `.certs/`
+  (fora do versionamento) e o `with-env.mjs` a passa como `NODE_EXTRA_CA_CERTS`.
+- **Next.js não lê o `.env` da raiz**: em monorepo ele só procura dentro da pasta do app, então o storefront
+  subia sem `EDGE_SHARED_SECRET`, ignorava o `X-Forwarded-Host` e toda loja virava "Loja não encontrada".
+  Os 4 apps Next agora sobem por `scripts/with-env.mjs`, que carrega o `.env` da raiz antes do `next dev`.
+- **`turbo run dev --concurrency=20`**: são 16 tarefas persistentes (6 apps + 10 pacotes em watch) e o padrão 10
+  abortava o `pnpm dev` com "Invalid task configuration".
+- **`pnpm seed:dev`**: o `seed-dev.ts` existia mas não tinha script — agora está na api, no turbo e na raiz, e
+  publica um tema por loja de desenvolvimento (rosa na A, verde na B) para o white-label ser visível sem passo manual.
 - **pnpm 10.20.0** (não a 12.x): no Windows sem Developer Mode a 12.x falha ao criar symlinks
   (`os error 5`); a 10.x usa junctions e instala normalmente. Pinado em `packageManager`.
 - **Dev dos apps Nest com `nest start --watch`** (tsc) em vez de `tsx`: o esbuild não emite

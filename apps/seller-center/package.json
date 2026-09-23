@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "next dev --hostname :: --port 3002",
+    "dev": "node ../../scripts/with-env.mjs next dev --hostname :: --port 3002",
     "start": "next start --hostname :: --port 3002",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit"

@@ -10,6 +10,7 @@ export { IntegrationHub, NoActiveProviderError } from './application/integration
 export {
   PROVIDER_CONFIG_REPOSITORY,
   type ProviderConfigRecord,
+  type ProviderConfigSummary,
   type ProviderConfigRepositoryPort,
 } from './application/provider-config.port.js';
 export { CredentialCipher } from './infrastructure/credential-cipher.js';

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
 
 import { ADAPTER_REGISTRY, AdapterRegistry } from './application/adapter-registry.js';
 import { IntegrationHub } from './application/integration-hub.js';
@@ -31,6 +31,9 @@ export interface IntegrationsModuleOptions {
  * categoria, por tenant, com as credenciais cifradas, e monta o adapter
  * na hora da requisição a partir do `TenantContext`.
  */
+// global: qualquer módulo que precise de um provedor externo (pagamento,
+// frete, e-mail, busca) resolve pelo hub — e o console lê a saúde por tenant
+@Global()
 @Module({})
 export class IntegrationsModule {
   static register(options: IntegrationsModuleOptions) {

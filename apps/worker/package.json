@@ -23,7 +23,12 @@
     "@mkt/shared-kernel": "workspace:*",
     "@mkt/contracts": "workspace:*",
     "@mkt/modules-template": "workspace:*",
-    "bullmq": "^5.65.0"
+    "bullmq": "^5.65.0",
+    "@mkt/modules-tenancy": "workspace:*",
+    "@mkt/modules-identity": "workspace:*",
+    "@mkt/adapters-identity-clerk": "workspace:*",
+    "@mkt/adapters-fakes": "workspace:*",
+    "@mkt/modules-integrations": "workspace:*"
   },
   "devDependencies": {
     "@mkt/config": "workspace:*",

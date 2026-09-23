@@ -151,6 +151,9 @@ e `platform` (mesmas da Railway). O helper de migração segue `infra/db/module-
 pnpm install
 docker compose up -d            # infraestrutura local
 pnpm db:migrate                 # roda migrações de todos os módulos
+pnpm seed:dev                   # planos, tenants loja-a/loja-b, orgs, integrações fake e temas
+pnpm link:orgs                  # liga as organizações reais da Clerk aos tenants (desenvolvimento)
+pnpm ca:local                   # só onde há antivírus/proxy inspecionando TLS (ver docs/progresso.md)
 pnpm dev                        # api + worker + frontends
 pnpm test                       # unit + integração
 pnpm test:e2e                   # Playwright

@@ -11,6 +11,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "db:migrate": "node dist/migrate.js",
+    "seed:dev": "node dist/seed-dev.js",
+    "link:orgs": "node dist/link-orgs.js",
     "gen:openapi": "node dist/openapi.js"
   },
   "dependencies": {

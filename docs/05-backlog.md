@@ -140,7 +140,7 @@ runbook `docs/runbooks/deploy.md`. *Pré-requisitos (você):* checklist seção 
 ---
 ## E00T — Tenancy de produto (Fase 1)
 
-### US-085 [SPIKE] — Domínio próprio de tenant via Cloudflare for SaaS → Railway
+### US-085 [SPIKE] — Domínio próprio de tenant via Cloudflare for SaaS → Railway 🚧 (artefatos prontos; validação real pendente — checklist §C)
 **Objetivo:** provar, antes de construir US-078, que um domínio próprio chega ao storefront certo com HTTPS.
 ```gherkin
 Cenário: domínio próprio resolvido
@@ -159,7 +159,7 @@ relatório em `docs/spikes/US-085.md` com a conclusão (seguir / ajustar / alter
 
 - [ ] **US-083 — Seletor de organização e marca no painel** (P) — RF-IAM-15.
 
-### US-076 — Provisionar tenant
+### US-076 — Provisionar tenant ✅
 **Como** staff da plataforma **eu quero** criar um novo marketplace **para que** o cliente comece a operar.
 ```gherkin
 Cenário: provisionamento completo
@@ -182,11 +182,11 @@ Cenário: slug inválido ou reservado
 ```
 RF-TEN-01/02 · RNF-TEN-03
 
-- [ ] **US-077 — Tema e identidade visual do tenant** (M) — RF-TEN-04; tokens de design aplicados via CSS variables no storefront/painéis; preview antes de publicar.
+- [x] **US-077 — Tema e identidade visual do tenant** (M) — RF-TEN-04; tokens de design aplicados via CSS variables no storefront/painéis; preview antes de publicar.
 - [ ] **US-078 — Domínio próprio com TLS** (M) — RF-TEN-03; produto em cima do resultado da US-085: tela no admin, `DomainProvisioningPort` com adapter Cloudflare for SaaS + fake, verificação DNS (CNAME/TXT), status do certificado, remoção.
 - [ ] **US-079 — Configuração de integrações pelo tenant** (M) — RF-INT-01; tela no admin: escolher provedor, credenciais, "testar conexão", ativar; RN-TEN-02 bloqueia checkout sem gateway válido.
-- [ ] **US-080 — Suspensão e modo suporte** (M) — RF-TEN-06/07, RN-TEN-04; audit log visível ao admin do tenant.
-- [ ] **US-081 — Console: lista de tenants e uso** (M) — RF-TEN-11; projeção de uso alimentada por eventos.
+- [x] **US-080 — Suspensão e modo suporte** (M) — RF-TEN-06/07, RN-TEN-04; audit log visível ao admin do tenant.
+- [x] **US-081 — Console: lista de tenants e uso** (M) — RF-TEN-11; projeção de uso alimentada por eventos.
 
 ---
 ## E01 — Identidade e acesso (Fase 1)

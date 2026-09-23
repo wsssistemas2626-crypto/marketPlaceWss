@@ -41,6 +41,149 @@
         }
       }
     },
+    "/v1/admin/support-sessions": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /v1/admin/support-sessions",
+        "description": "Backoffice do operador — organização kind=tenant na Clerk.",
+        "security": [
+          {
+            "panelToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/theme": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "GET /v1/admin/theme",
+        "description": "Backoffice do operador — organização kind=tenant na Clerk.",
+        "security": [
+          {
+            "panelToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "PUT /v1/admin/theme",
+        "description": "Backoffice do operador — organização kind=tenant na Clerk.",
+        "security": [
+          {
+            "panelToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/theme/discard": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /v1/admin/theme/discard",
+        "description": "Backoffice do operador — organização kind=tenant na Clerk.",
+        "security": [
+          {
+            "panelToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/admin/theme/publish": {
+      "post": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "POST /v1/admin/theme/publish",
+        "description": "Backoffice do operador — organização kind=tenant na Clerk.",
+        "security": [
+          {
+            "panelToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/hooks/identity/clerk": {
       "post": {
         "tags": [
@@ -200,6 +343,129 @@
         }
       }
     },
+    "/v1/platform/tenants/{tenantId}/support-sessions": {
+      "get": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "GET /v1/platform/tenants/{tenantId}/support-sessions",
+        "description": "Staff da plataforma — aplicação Clerk Console, sem tenant.",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "consoleToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "POST /v1/platform/tenants/{tenantId}/support-sessions",
+        "description": "Staff da plataforma — aplicação Clerk Console, sem tenant.",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "consoleToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/platform/tenants/{tenantId}/support-sessions/{sessionId}": {
+      "delete": {
+        "tags": [
+          "platform"
+        ],
+        "summary": "DELETE /v1/platform/tenants/{tenantId}/support-sessions/{sessionId}",
+        "description": "Staff da plataforma — aplicação Clerk Console, sem tenant.",
+        "parameters": [
+          {
+            "name": "tenantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "consoleToken": []
+          }
+        ],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/seller/widgets": {
       "get": {
         "tags": [
@@ -235,6 +501,31 @@
           "store"
         ],
         "summary": "GET /v1/store/tenant-context",
+        "description": "Comprador — tenant resolvido pelo host.",
+        "security": [],
+        "responses": {
+          "2XX": {
+            "description": "Sucesso"
+          },
+          "4XX": {
+            "description": "Erro de cliente (RFC 9457)",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Problem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/store/theme": {
+      "get": {
+        "tags": [
+          "store"
+        ],
+        "summary": "GET /v1/store/theme",
         "description": "Comprador — tenant resolvido pelo host.",
         "security": [],
         "responses": {

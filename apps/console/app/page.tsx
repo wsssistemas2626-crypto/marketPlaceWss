@@ -1,60 +1,52 @@
-import { auth } from '@clerk/nextjs/server';
+import Link from 'next/link';
 
-interface TenantSummary {
+import { panelFetch } from '../lib/api';
+import { celula, moeda, pagina } from '../lib/ui';
+
+interface TenantRow {
   id: string;
   slug: string;
   name: string;
   status: string;
-  cell: string;
   planId?: string;
   hosts: string[];
+  usage: { orders: number; gmv_cents: number; skus: number; sellers: number };
+  integrations: { category: string; provider: string }[];
 }
 
-const API_URL = process.env.API_INTERNAL_URL ?? 'http://localhost:3100';
-
 /**
- * Esqueleto do console da plataforma (US-075).
+ * Console da plataforma: tenants com status, plano, uso e saúde de integrações
+ * (US-081 / RF-TEN-11).
  *
- * Os dados vêm da API em `/v1/platform/*`, com o token do staff — o console
- * não fala com o banco (CLAUDE.md §9: frontend consome só a API).
+ * Os dados vêm da API em `/v1/platform/*` com o token do staff — o console não
+ * fala com o banco (CLAUDE.md §9).
  */
-async function fetchTenants(): Promise<{ tenants: TenantSummary[]; error?: string }> {
-  const { getToken } = await auth();
-  const token = await getToken();
+async function fetchTenants(): Promise<{ tenants: TenantRow[]; error?: string }> {
+  const { data, error } = await panelFetch<{ data: TenantRow[] }>('/v1/platform/tenants');
 
-  if (token === null) return { tenants: [], error: 'Faça login para ver os tenants.' };
-
-  const response = await fetch(`${API_URL}/v1/platform/tenants`, {
-    headers: { authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    return { tenants: [], error: `A API respondeu ${response.status}.` };
-  }
-
-  const body = (await response.json()) as { data: TenantSummary[] };
-  return { tenants: body.data };
+  return data === undefined
+    ? { tenants: [], ...(error === undefined ? {} : { error }) }
+    : { tenants: data.data };
 }
 
 export default async function Home() {
   const { tenants, error } = await fetchTenants();
 
   return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: '2rem', maxWidth: '60rem' }}>
+    <main style={pagina}>
       <h1>Console da plataforma</h1>
-      <p>Tenants provisionados nesta instalação.</p>
+      <p>
+        Tenants provisionados, uso e integrações ativas. Clique no slug para suspender, reativar ou abrir modo
+        suporte.
+      </p>
 
       {error === undefined ? null : <p role="alert">{error}</p>}
 
       <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: '1rem' }}>
         <thead>
           <tr>
-            {['Slug', 'Nome', 'Status', 'Plano', 'Domínios'].map((coluna) => (
-              <th
-                key={coluna}
-                style={{ textAlign: 'left', borderBottom: '1px solid #ccc', padding: '.5rem' }}
-              >
+            {['Slug', 'Status', 'Plano', 'Pedidos', 'GMV', 'SKUs', 'Sellers', 'Integrações'].map((coluna) => (
+              <th key={coluna} style={{ ...celula, borderBottom: '2px solid #ccc' }}>
                 {coluna}
               </th>
             ))}
@@ -63,11 +55,27 @@ export default async function Home() {
         <tbody>
           {tenants.map((tenant) => (
             <tr key={tenant.id}>
-              <td style={{ padding: '.5rem' }}>{tenant.slug}</td>
-              <td style={{ padding: '.5rem' }}>{tenant.name}</td>
-              <td style={{ padding: '.5rem' }}>{tenant.status}</td>
-              <td style={{ padding: '.5rem' }}>{tenant.planId ?? '—'}</td>
-              <td style={{ padding: '.5rem' }}>{tenant.hosts.join(', ')}</td>
+              <td style={celula}>
+                <Link href={`/tenants/${tenant.slug}`}>
+                  <strong>{tenant.slug}</strong>
+                </Link>
+                <br />
+                <small>{tenant.hosts[0]}</small>
+              </td>
+              <td style={celula}>{tenant.status}</td>
+              <td style={celula}>{tenant.planId ?? '—'}</td>
+              <td style={celula}>{tenant.usage.orders}</td>
+              <td style={celula}>{moeda(tenant.usage.gmv_cents)}</td>
+              <td style={celula}>{tenant.usage.skus}</td>
+              <td style={celula}>{tenant.usage.sellers}</td>
+              <td style={celula}>
+                {tenant.integrations.length === 0 ? (
+                  // sem gateway configurado o tenant não aceita pedido (RN-TEN-02)
+                  <span title="nenhum provedor ativo">⚠ nenhuma</span>
+                ) : (
+                  `${tenant.integrations.length} ativa(s)`
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

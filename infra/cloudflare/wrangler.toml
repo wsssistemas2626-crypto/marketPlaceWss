@@ -1,0 +1,16 @@
+# Worker do edge para domínios próprios de tenant (US-085 / US-078).
+#
+# Deploy: `wrangler deploy` a partir desta pasta, com as variáveis abaixo
+# definidas como secrets (`wrangler secret put EDGE_SHARED_SECRET`).
+name = "marketplace-edge"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# O Worker responde pelos hostnames de cliente registrados no Cloudflare for
+# SaaS (Custom Hostnames). O mapeamento hostname → tenant é do nosso banco.
+[vars]
+# host cadastrado na Railway que recebe todo o tráfego de domínio próprio
+EDGE_ORIGIN = "edge-origin.suaplataforma.com.br"
+
+# EDGE_SHARED_SECRET vai como secret, nunca aqui:
+#   wrangler secret put EDGE_SHARED_SECRET
