@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import type { Redis } from 'ioredis';
 
@@ -28,6 +28,9 @@ import {
  * (`t:{tenantId}:…`), então a cota e o replay de um tenant nunca alcançam o
  * outro (`06-multi-tenancy.md` §4).
  */
+// global: toda configuração `[config]` passa pelo ConfigService, de qualquer
+// módulo (CLAUDE.md §4.13) — ex.: versões de termos lidas pelo identity
+@Global()
 @Module({
   providers: [
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },

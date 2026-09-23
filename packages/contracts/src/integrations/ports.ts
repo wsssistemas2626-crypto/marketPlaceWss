@@ -161,11 +161,20 @@ export type OrganizationKind = 'tenant' | 'seller';
 export interface VerifiedPanelToken {
   readonly userId: string;
   readonly organizationId: string;
-  readonly organizationKind: OrganizationKind;
+  /**
+   * Tipo declarado no token (template de sessão). Atalho opcional: quem decide
+   * é o vínculo no banco — ausente, vale o vínculo; presente e divergente, recusa.
+   */
+  readonly organizationKind?: OrganizationKind;
   readonly tenantId?: string;
   readonly sellerId?: string;
   readonly roles: readonly string[];
   readonly permissions: readonly string[];
+  /**
+   * A sessão passou por um segundo fator (RF-IAM-14). Ausente quando o token
+   * não traz a informação — para quem exige MFA, ausente vale como "não".
+   */
+  readonly secondFactorVerified?: boolean;
 }
 
 export interface WorkforceIdentityPort {
@@ -187,6 +196,26 @@ export interface WorkforceIdentityPort {
     headers: Readonly<Record<string, string>>,
     body: string,
   ): Promise<{ type: string; data: Record<string, unknown> }>;
+}
+
+/** Endereço de um CEP (RF-IAM-09) — só o que o serviço sabe; número e complemento vêm do comprador. */
+export interface PostalCodeAddress {
+  /** Só dígitos. */
+  readonly zipCode: string;
+  readonly street: string;
+  readonly district: string;
+  readonly city: string;
+  /** UF, duas letras. */
+  readonly state: string;
+}
+
+/**
+ * Consulta de CEP (dono: `identity`, catálogo em `03-integracoes.md`). Não é
+ * por tenant: todo marketplace usa o mesmo serviço, escolhido pelo host.
+ */
+export interface PostalCodePort {
+  /** `undefined` quando o CEP não existe; lança quando o serviço está fora. */
+  lookup(zipCode: string): Promise<PostalCodeAddress | undefined>;
 }
 
 export interface CustomHostname {

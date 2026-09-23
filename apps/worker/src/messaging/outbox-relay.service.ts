@@ -16,7 +16,7 @@ import {
 } from '@mkt/platform';
 
 /** Schemas de módulo que têm tabela `outbox`. Cresce a cada módulo novo. */
-const OUTBOX_SCHEMAS = ['tenancy', 'template'];
+const OUTBOX_SCHEMAS = ['tenancy', 'template', 'identity'];
 
 /**
  * Relay do outbox: o único lugar (com `@PlatformJob`) que usa o role

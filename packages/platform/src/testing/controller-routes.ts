@@ -67,6 +67,8 @@ export function listControllerRoutes(
       routes.push({
         method: httpMethod,
         path: isExcluded || prefix === '' ? withoutPrefix : joinPath(prefix, withoutPrefix),
+        controller,
+        handler,
       });
     }
   }

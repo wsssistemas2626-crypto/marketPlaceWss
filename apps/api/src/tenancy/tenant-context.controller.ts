@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 
-import { requireTenant } from '@mkt/platform';
+import { Public, requireTenant } from '@mkt/platform';
 
 /**
  * Diagnóstico da resolução de tenant: prova que `loja-a.localhost` e
@@ -8,6 +8,7 @@ import { requireTenant } from '@mkt/platform';
  * Fase 0 em `docs/06-plano-execucao.md`). Não expõe dado de negócio.
  */
 @Controller('store/tenant-context')
+@Public('vitrine: o tenant vem do host e a resposta é a identidade pública da loja')
 export class TenantContextController {
   @Get()
   get(): { tenantId: string; slug: string; cell: string } {

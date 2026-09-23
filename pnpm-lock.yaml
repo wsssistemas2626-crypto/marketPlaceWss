@@ -72,6 +72,9 @@ importers:
       '@mkt/adapters-identity-clerk':
         specifier: workspace:*
         version: link:../../packages/adapters/identity-clerk
+      '@mkt/adapters-postal-code-viacep':
+        specifier: workspace:*
+        version: link:../../packages/adapters/postal-code-viacep
       '@mkt/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -414,6 +417,28 @@ importers:
         specifier: ^4.0.10
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.6)(@vitest/coverage-v8@4.1.11)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
 
+  packages/adapters/postal-code-viacep:
+    dependencies:
+      '@mkt/contracts':
+        specifier: workspace:*
+        version: link:../../contracts
+    devDependencies:
+      '@mkt/config':
+        specifier: workspace:*
+        version: link:../../config
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.13.6
+      eslint:
+        specifier: ^9.39.1
+        version: 9.39.5
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^4.0.10
+        version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.6)(@vitest/coverage-v8@4.1.11)(vite@8.3.0(@types/node@24.13.6)(esbuild@0.28.2)(tsx@4.23.15)(yaml@2.9.1))
+
   packages/config:
     dependencies:
       '@eslint/js':
@@ -509,6 +534,9 @@ importers:
       '@mkt/contracts':
         specifier: workspace:*
         version: link:../../contracts
+      '@mkt/modules-integrations':
+        specifier: workspace:*
+        version: link:../integrations
       '@mkt/platform':
         specifier: workspace:*
         version: link:../../platform

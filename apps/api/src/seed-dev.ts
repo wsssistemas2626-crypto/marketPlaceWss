@@ -163,7 +163,10 @@ async function main(): Promise<void> {
                 `INSERT INTO integrations.provider_configs
                         (id, tenant_id, category, provider, credentials_encrypted, settings, is_active)
                  VALUES (gen_random_uuid(), $1, $2, 'fake', $3, '{}'::jsonb, true)
-                 ON CONFLICT (tenant_id, category, provider) DO NOTHING`,
+                 -- regrava a credencial: linha de um seed antigo (ou cifrada com outra
+                 -- INTEGRATIONS_ENCRYPTION_KEY) não decifra, e todo hub.resolve falharia
+                 ON CONFLICT (tenant_id, category, provider)
+                 DO UPDATE SET credentials_encrypted = EXCLUDED.credentials_encrypted`,
                 [tenant.tenantId, category, credenciaisFake],
               ),
             tenant.tenantId,

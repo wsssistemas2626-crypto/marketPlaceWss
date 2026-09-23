@@ -8,7 +8,11 @@ import { TemplateModule } from '@mkt/modules-template';
 
 import { loadApiEnv } from './env.js';
 import { HealthModule } from './health/health.module.js';
-import { createWorkforceIdentity, createConsoleIdentity } from './identity/identity.provider.js';
+import {
+  createConsoleIdentity,
+  createWorkforceIdentity,
+  customerOptions,
+} from './identity/identity.provider.js';
 import { createAdapterRegistry } from './integrations/adapter-registry.provider.js';
 import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
 import { PlatformModule } from './platform/platform.module.js';
@@ -29,11 +33,13 @@ import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
     HealthModule,
     IntegrationsModule.register({
       encryptionKey: loadApiEnv().integrationsEncryptionKey,
-      registry: createAdapterRegistry(),
+      registry: createAdapterRegistry({ devSmtpUrl: loadApiEnv().devSmtpUrl }),
     }),
     IdentityModule.register({
       workforceIdentity: createWorkforceIdentity(loadApiEnv()),
       consoleIdentity: createConsoleIdentity(loadApiEnv()),
+      policy: { mfaEnforced: loadApiEnv().panelMfaEnforced },
+      customers: customerOptions(loadApiEnv()),
     }),
     TemplateModule,
   ],

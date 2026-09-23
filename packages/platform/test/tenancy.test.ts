@@ -15,6 +15,7 @@ import {
   type TenantContext,
 } from '../src/tenancy/tenant-context.js';
 import {
+  resolveClientIp,
   resolveRequestHost,
   TenantContextMiddleware,
   type HostCarrier,
@@ -269,5 +270,24 @@ describe('InMemoryTenantDirectory', () => {
     vazio.upsert(lojaA);
     expect((await vazio.findByHost('LOJA-A.localhost:3000'))?.slug).toBe('loja-a');
     expect((await vazio.findById(lojaA.tenantId))?.slug).toBe('loja-a');
+  });
+});
+
+describe('IP do cliente (consentimento LGPD)', () => {
+  const config = { edgeSharedSecret: 'segredo-do-edge' };
+
+  it('usa o X-Forwarded-For só com o segredo do edge', () => {
+    const comSegredo = {
+      headers: { 'x-forwarded-for': '200.1.2.3, 10.0.0.1', 'x-edge-secret': 'segredo-do-edge' },
+      ip: '10.0.0.9',
+    };
+    const semSegredo = { headers: { 'x-forwarded-for': '200.1.2.3' }, ip: '10.0.0.9' };
+
+    expect(resolveClientIp(comSegredo, config)).toBe('200.1.2.3');
+    expect(resolveClientIp(semSegredo, config)).toBe('10.0.0.9');
+  });
+
+  it('IPv4 mapeado em IPv6 vira IPv4', () => {
+    expect(resolveClientIp({ headers: {}, ip: '::ffff:127.0.0.1' }, {})).toBe('127.0.0.1');
   });
 });

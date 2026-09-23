@@ -20,3 +20,13 @@ export {
   type TenantStatusChangedData,
 } from './events/tenancy-events.js';
 export * from './integrations/ports.js';
+export * from './identity/panel-access.js';
+export {
+  CUSTOMER_REGISTERED,
+  CUSTOMER_VERIFIED,
+  customerRegisteredData,
+  customerVerifiedData,
+  type CustomerRegisteredData,
+  type CustomerVerifiedData,
+} from './events/identity-events.js';
+export * from './identity/customer-dtos.js';

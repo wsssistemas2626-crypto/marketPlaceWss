@@ -13,6 +13,9 @@ export interface RegisteredRoute {
   readonly method: HttpMethod;
   /** Caminho como o framework registrou, ex.: `/v1/store/widgets/:id`. */
   readonly path: string;
+  /** Classe e método de origem — é neles que ficam os decorators de acesso. */
+  readonly controller?: object;
+  readonly handler?: object;
 }
 
 /** Público da rota — define qual credencial o teste usa. */
@@ -184,9 +187,20 @@ function fillParams(
   return { url, unresolved };
 }
 
+/**
+ * O `instance` do Problem Details é o caminho que **o próprio tenant A**
+ * pediu (ex.: `/v1/store/…/addresses/<id-da-B>`): ecoar a URL da requisição
+ * não entrega nada que ele já não tivesse. Todo o resto do corpo é checado.
+ */
+function withoutEchoedInstance(body: unknown): unknown {
+  if (body === null || typeof body !== 'object' || Array.isArray(body) || !('instance' in body)) return body;
+  const { instance: _echo, ...rest } = body as Record<string, unknown>;
+  return rest;
+}
+
 function findLeak(body: unknown, secrets: readonly string[]): string | undefined {
   if (secrets.length === 0) return undefined;
 
-  const serialized = typeof body === 'string' ? body : JSON.stringify(body ?? null);
+  const serialized = typeof body === 'string' ? body : JSON.stringify(withoutEchoedInstance(body) ?? null);
   return secrets.find((secret) => serialized.includes(secret));
 }

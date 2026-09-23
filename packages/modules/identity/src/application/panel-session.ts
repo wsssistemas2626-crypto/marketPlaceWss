@@ -1,4 +1,10 @@
-import type { OrganizationKind, VerifiedPanelToken } from '@mkt/contracts';
+import {
+  CLERK_ADMIN_ROLE,
+  isRoleAllowedFor,
+  roleRequiresMfa,
+  type OrganizationKind,
+  type VerifiedPanelToken,
+} from '@mkt/contracts';
 import { DomainError } from '@mkt/shared-kernel';
 
 /** Vínculo organização da Clerk → tenant/seller, conferido no banco. */
@@ -52,6 +58,16 @@ export class MissingPermissionError extends PanelAuthError {
   }
 }
 
+export class MfaRequiredError extends PanelAuthError {
+  constructor() {
+    super(
+      'mfa_required',
+      'Seu papel exige verificação em duas etapas: ative-a no seu perfil e entre de novo',
+      403,
+    );
+  }
+}
+
 /** Sessão de painel já validada: token + vínculo conferido no banco. */
 export interface PanelSession {
   readonly userId: string;
@@ -61,10 +77,12 @@ export interface PanelSession {
   readonly sellerId?: string;
   readonly roles: readonly string[];
   readonly permissions: readonly string[];
+  /** A sessão passou por segundo fator (RF-IAM-14). */
+  readonly secondFactorVerified: boolean;
 }
 
 /** Papel que administra a organização: na Clerk ele detém todas as permissões dela. */
-export const ORG_ADMIN_ROLE = 'org:admin';
+export const ORG_ADMIN_ROLE = CLERK_ADMIN_ROLE;
 
 /**
  * Transforma um token verificado em sessão de painel.
@@ -73,12 +91,16 @@ export const ORG_ADMIN_ROLE = 'org:admin';
  * confiáveis sozinhas. O tenant (e o seller) vêm do `org_links` no nosso
  * banco; se a claim discordar do vínculo, a requisição é recusada — um token
  * adulterado ou uma organização remapeada não viram acesso a outro tenant.
+ *
+ * Papel de outro tipo de organização é descartado junto com as permissões:
+ * `org:seller_finance` atribuído por engano numa organização de tenant não
+ * pode abrir `org:finance:read` no admin (ADR-013, tabela de papéis).
  */
 export function toPanelSession(token: VerifiedPanelToken, link: OrgLink | undefined): PanelSession {
   if (link === undefined || link.status !== 'active') {
     throw new OrganizationNotLinkedError();
   }
-  if (link.kind !== token.organizationKind) {
+  if (token.organizationKind !== undefined && link.kind !== token.organizationKind) {
     throw new WrongOrganizationKindError();
   }
   if (token.tenantId !== undefined && token.tenantId !== link.tenantId) {
@@ -88,14 +110,18 @@ export function toPanelSession(token: VerifiedPanelToken, link: OrgLink | undefi
     throw new OrganizationNotLinkedError();
   }
 
+  const roles = token.roles.filter((role) => isRoleAllowedFor(role, link.kind));
+
   return {
     userId: token.userId,
     organizationId: link.clerkOrgId,
     kind: link.kind,
     tenantId: link.tenantId,
     ...(link.sellerId === undefined ? {} : { sellerId: link.sellerId }),
-    roles: token.roles,
-    permissions: token.permissions,
+    roles,
+    // um papel por associação na Clerk: sem papel válido, nenhuma permissão vale
+    permissions: roles.length === 0 ? [] : token.permissions,
+    secondFactorVerified: token.secondFactorVerified === true,
   };
 }
 
@@ -114,4 +140,13 @@ export function assertKind(session: PanelSession, expected: OrganizationKind): v
 export function assertPermission(session: PanelSession, permission: string): void {
   if (session.roles.includes(ORG_ADMIN_ROLE)) return;
   if (!session.permissions.includes(permission)) throw new MissingPermissionError(permission);
+}
+
+/**
+ * RF-IAM-14: `tenant_admin`, `tenant_finance`, `seller_owner` (e o
+ * `org:admin`, que tem tudo) só entram com segundo fator verificado na sessão.
+ */
+export function assertMfa(session: Pick<PanelSession, 'roles' | 'secondFactorVerified'>): void {
+  if (session.secondFactorVerified) return;
+  if (session.roles.some(roleRequiresMfa)) throw new MfaRequiredError();
 }

@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   Inject,
   Injectable,
+  Optional,
   SetMetadata,
   type NestMiddleware,
 } from '@nestjs/common';
@@ -10,10 +11,11 @@ import { Reflector } from '@nestjs/core';
 
 import type { WorkforceIdentityPort } from '@mkt/contracts';
 
-import { InvalidPanelTokenError } from '../application/panel-session.js';
+import { InvalidPanelTokenError, MfaRequiredError } from '../application/panel-session.js';
+import { PANEL_AUTH_POLICY, type PanelAuthPolicy } from './panel-auth.guard.js';
 
 export const CONSOLE_IDENTITY = Symbol('CONSOLE_IDENTITY');
-const CONSOLE_AUTH = 'mkt:console-auth';
+export const CONSOLE_AUTH = 'mkt:console-auth';
 
 /** Marca a rota como do console da plataforma (staff, sem tenant). */
 export const ConsoleAuth = (): MethodDecorator & ClassDecorator => SetMetadata(CONSOLE_AUTH, true);
@@ -21,6 +23,8 @@ export const ConsoleAuth = (): MethodDecorator & ClassDecorator => SetMetadata(C
 /** Sessão do staff: não tem tenant — rotas `/v1/platform/*` são sem tenant. */
 export interface ConsoleSession {
   readonly userId: string;
+  /** RF-IAM-14: staff só entra com segundo fator verificado na sessão. */
+  readonly secondFactorVerified: boolean;
 }
 
 export interface ConsoleRequest {
@@ -53,7 +57,10 @@ export class ConsoleAuthMiddleware implements NestMiddleware {
 
     try {
       const verified = await this.identity.verifyToken(token);
-      request.consoleSession = { userId: verified.userId };
+      request.consoleSession = {
+        userId: verified.userId,
+        secondFactorVerified: verified.secondFactorVerified === true,
+      };
       next();
     } catch {
       next(new InvalidPanelTokenError());
@@ -63,7 +70,14 @@ export class ConsoleAuthMiddleware implements NestMiddleware {
 
 @Injectable()
 export class ConsoleAuthGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  private readonly policy: PanelAuthPolicy;
+
+  constructor(
+    private readonly reflector: Reflector,
+    @Optional() @Inject(PANEL_AUTH_POLICY) policy?: PanelAuthPolicy,
+  ) {
+    this.policy = policy ?? { mfaEnforced: false };
+  }
 
   canActivate(context: ExecutionContext): boolean {
     const required = this.reflector.getAllAndOverride<boolean>(CONSOLE_AUTH, [
@@ -75,6 +89,8 @@ export class ConsoleAuthGuard implements CanActivate {
 
     const session = context.switchToHttp().getRequest<ConsoleRequest>().consoleSession;
     if (session === undefined) throw new InvalidPanelTokenError();
+    // no console não há papel "leve": todo staff é privilegiado
+    if (this.policy.mfaEnforced && !session.secondFactorVerified) throw new MfaRequiredError();
 
     return true;
   }

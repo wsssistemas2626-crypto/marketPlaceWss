@@ -61,3 +61,4 @@ export { DbTenantDirectory } from './infrastructure/db-tenant-directory.js';
 export { DrizzleProvisioningSteps } from './infrastructure/drizzle-provisioning-steps.js';
 export { DrizzleTenantRegistry } from './infrastructure/drizzle-tenant-registry.js';
 export { TenancyModule, type TenancyModuleOptions } from './tenancy.module.js';
+export { PanelBrandingService, type PanelBranding } from './application/panel-branding.js';

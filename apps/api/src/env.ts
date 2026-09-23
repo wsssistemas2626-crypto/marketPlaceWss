@@ -16,6 +16,20 @@ export interface ApiEnv {
   readonly cell: string;
   /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
   readonly edgeSharedSecret?: string;
+  /**
+   * RF-IAM-14: exige segundo fator dos papéis sensíveis e do staff. Sempre
+   * ligado em produção; fora dela, `PANEL_MFA_ENFORCED=true` liga — só faz
+   * sentido com MFA habilitado na instância da Clerk (checklist §G).
+   */
+  readonly panelMfaEnforced: boolean;
+  /** Mailpit local: com ele, o e-mail "fake" é entregue de verdade (só fora de produção). */
+  readonly devSmtpUrl?: string;
+  /** Chaves Ed25519 (PEM) do access token do comprador; ausentes fora de produção = par efêmero. */
+  readonly customerTokenKeys?: { readonly privateKeyPem: string; readonly publicKeyPem: string };
+  /** Consulta de CEP: `viacep` (padrão) ou `fake` (testes, sem rede). */
+  readonly postalCodeProvider: 'viacep' | 'fake';
+  /** Loja de cada tenant, para links de e-mail (`{slug}` é substituído). */
+  readonly storefrontUrlTemplate: string;
   /** Credenciais da aplicação Clerk Console (staff). */
   readonly consoleClerk?: ApiEnv['clerk'];
   /** Credenciais da Clerk (ADR-013). Ausentes = adapter fake em desenvolvimento. */
@@ -56,6 +70,24 @@ function clerkFromEnv(prefix: '' | 'CONSOLE_' = ''): ApiEnv['clerk'] {
   };
 }
 
+/** PEM em variável de ambiente costuma vir com `\n` literal no lugar da quebra de linha. */
+const pem = (value: string | undefined): string | undefined =>
+  value === undefined || value.trim() === '' ? undefined : value.replace(/\\n/g, '\n');
+
+function customerTokenKeysFromEnv(): Pick<ApiEnv, 'customerTokenKeys'> {
+  const privateKeyPem = pem(process.env.CUSTOMER_JWT_PRIVATE_KEY);
+  const publicKeyPem = pem(process.env.CUSTOMER_JWT_PUBLIC_KEY);
+
+  if (privateKeyPem === undefined || publicKeyPem === undefined) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CUSTOMER_JWT_PRIVATE_KEY e CUSTOMER_JWT_PUBLIC_KEY são obrigatórias em produção');
+    }
+    return {};
+  }
+
+  return { customerTokenKeys: { privateKeyPem, publicKeyPem } };
+}
+
 function required(name: string): string {
   const value = process.env[name];
   if (value === undefined || value.trim() === '') {
@@ -89,6 +121,14 @@ export function loadApiEnv(): ApiEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv: process.env.NODE_ENV ?? 'development',
     cell: process.env.PLATFORM_CELL ?? 'shared-1',
+    ...(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || !process.env.SMTP_URL
+      ? {}
+      : { devSmtpUrl: process.env.SMTP_URL }),
+    ...customerTokenKeysFromEnv(),
+    postalCodeProvider:
+      process.env.POSTAL_CODE_PROVIDER === 'fake' || process.env.NODE_ENV === 'test' ? 'fake' : 'viacep',
+    storefrontUrlTemplate: process.env.STOREFRONT_URL_TEMPLATE ?? 'http://{slug}.localhost:3000',
+    panelMfaEnforced: process.env.NODE_ENV === 'production' || process.env.PANEL_MFA_ENFORCED === 'true',
     // em desenvolvimento uma chave fixa basta; em produção vem do KMS (checklist §F)
     integrationsEncryptionKey:
       process.env.INTEGRATIONS_ENCRYPTION_KEY === undefined || process.env.INTEGRATIONS_ENCRYPTION_KEY === ''

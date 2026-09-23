@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
+import { Global, MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 
 import {
   TENANT_RESOLUTION_CONFIG,
@@ -14,7 +14,11 @@ import { TenantContextController } from './tenant-context.controller.js';
  *
  * O registro vem do módulo `tenancy` (US-075), que é global; aqui fica só o
  * middleware e a configuração de célula/edge deste processo.
+ *
+ * Global: a configuração da borda (segredo do edge) também decide qual IP o
+ * rate limit e o consentimento enxergam (`resolveClientIp`).
  */
+@Global()
 @Module({
   controllers: [TenantContextController],
   providers: [

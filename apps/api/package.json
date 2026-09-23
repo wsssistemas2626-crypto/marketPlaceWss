@@ -13,11 +13,13 @@
     "db:migrate": "node dist/migrate.js",
     "seed:dev": "node dist/seed-dev.js",
     "link:orgs": "node dist/link-orgs.js",
+    "clerk:roles": "node dist/sync-clerk-roles.js",
     "gen:openapi": "node dist/openapi.js"
   },
   "dependencies": {
     "@mkt/adapters-fakes": "workspace:*",
     "@mkt/adapters-identity-clerk": "workspace:*",
+    "@mkt/adapters-postal-code-viacep": "workspace:*",
     "@mkt/contracts": "workspace:*",
     "@mkt/modules-identity": "workspace:*",
     "@mkt/modules-integrations": "workspace:*",

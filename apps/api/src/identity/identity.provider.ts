@@ -1,8 +1,10 @@
 import { Logger } from '@nestjs/common';
 
-import { FakeWorkforceIdentity } from '@mkt/adapters-fakes';
+import { FakePostalCode, FakeWorkforceIdentity } from '@mkt/adapters-fakes';
 import { ClerkWorkforceIdentity } from '@mkt/adapters-identity-clerk';
-import type { WorkforceIdentityPort } from '@mkt/contracts';
+import { ViaCepPostalCode } from '@mkt/adapters-postal-code-viacep';
+import type { PostalCodePort, WorkforceIdentityPort } from '@mkt/contracts';
+import { generateEd25519KeyPair } from '@mkt/platform';
 
 import type { ApiEnv } from '../env.js';
 
@@ -52,4 +54,46 @@ export function createConsoleIdentity(env: ApiEnv): WorkforceIdentityPort {
       : { webhookSigningSecret: env.consoleClerk.webhookSigningSecret }),
     requireOrganization: false,
   });
+}
+
+let ephemeralKeys: { privateKeyPem: string; publicKeyPem: string } | undefined;
+
+/**
+ * Sem chaves no ambiente (desenvolvimento, testes), um par Ed25519 efêmero:
+ * funciona, mas os tokens morrem a cada reinício da API. Produção exige as
+ * chaves (`env.ts` recusa subir sem elas).
+ */
+function customerTokenKeys(env: ApiEnv): { privateKeyPem: string; publicKeyPem: string } {
+  if (env.customerTokenKeys !== undefined) return env.customerTokenKeys;
+
+  if (ephemeralKeys === undefined) {
+    new Logger('CustomerTokens').warn(
+      'CUSTOMER_JWT_*_KEY ausentes: chaves efêmeras (sessões de comprador caem a cada reinício)',
+    );
+    ephemeralKeys = generateEd25519KeyPair();
+  }
+  return ephemeralKeys;
+}
+
+/**
+ * CEP (US-014): ViaCEP por padrão — público, sem conta. `POSTAL_CODE_PROVIDER=fake`
+ * (testes, ou desenvolvimento sem internet) usa uma tabela fixa de CEPs.
+ */
+function createPostalCode(env: ApiEnv): PostalCodePort {
+  return env.postalCodeProvider === 'fake' ? new FakePostalCode() : new ViaCepPostalCode();
+}
+
+/** Compradores (US-010 a US-014): links dos e-mails, borda confiável, chaves do access token e CEP. */
+export function customerOptions(env: ApiEnv): {
+  storefrontUrlTemplate: string;
+  edgeSharedSecret?: string;
+  tokenKeys: { privateKeyPem: string; publicKeyPem: string };
+  postalCode: PostalCodePort;
+} {
+  return {
+    storefrontUrlTemplate: env.storefrontUrlTemplate,
+    ...(env.edgeSharedSecret === undefined ? {} : { edgeSharedSecret: env.edgeSharedSecret }),
+    tokenKeys: customerTokenKeys(env),
+    postalCode: createPostalCode(env),
+  };
 }
