@@ -6,7 +6,7 @@
 ## Estado atual
 - **Fase:** 1 — MVP transacional
 - **Marco atual:** 1.1 — Identidade (concluído — aguardando revisão do PR)
-- **Branch de trabalho:** `fase-1/m11-identidade` (empilhada sobre `fase-1/m10-tenancy-de-produto`: os PRs #1–#6
+- **Branch de trabalho:** `fase-1/m11-identidade` (PR #7, empilhada sobre `fase-1/m10-tenancy-de-produto`: os PRs #1–#6
   ainda não entraram na `main`)
 - **Próxima story:** marco 1.2 — Sellers (US-015 → US-019; US-016 com gateway fake)
 - **Última atualização:** 2026-09-23
@@ -20,7 +20,7 @@
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ CI verde | PR #4 |
 | C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` (PR #5) |
 
-## Fase 1 — marco 1.1 (concluído)
+## Fase 1 — marco 1.1 (concluído — PR #7)
 Ordem: US-013 → US-083 → US-010 → **US-011** → US-012 → US-014. A US-011 não estava na lista do marco no plano,
 mas a US-012 (derrubar sessões) e a US-014 (comprador logado) dependem dela — incluída.
 - **US-013** — catálogo de papéis/permissões em `@mkt/contracts`; `pnpm clerk:roles` sincroniza com a Clerk pela
