@@ -69,3 +69,8 @@ export {
   type CustomerAccessTokenPort,
   type RefreshTokenRepositoryPort,
 } from './application/customers/session-ports.js';
+export {
+  PASSWORD_RESET_MAILER,
+  PasswordReset,
+  type PasswordResetMailerPort,
+} from './application/customers/password-reset.js';

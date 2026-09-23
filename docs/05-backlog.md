@@ -217,7 +217,7 @@ RF-IAM-01, RF-IAM-02 · RNF-SEG-02, RNF-LGPD-03 · *Fora de escopo:* login socia
 *Nota multi-tenant:* e-mail é único **por tenant**; o mesmo e-mail pode ter conta em outro marketplace (teste obrigatório).
 
 - [x] **US-011 — Login, refresh e logout** (M) — RF-IAM-03. Refresh rotativo com detecção de reuso (reuso revoga a família de tokens). Bloqueio progressivo (RNF-SEG-02).
-- [ ] **US-012 — Recuperação de senha** (P) — RF-IAM-04. Resposta genérica; token de uso único 1 h; invalida sessões ao trocar senha.
+- [x] **US-012 — Recuperação de senha** (P) — RF-IAM-04. Resposta genérica; token de uso único 1 h; invalida sessões ao trocar senha.
 - [x] **US-013 — Papéis e permissões dos painéis na Clerk + MFA** (M) — RF-IAM-07/14. Criar na Clerk os papéis e permissões da tabela do ADR-013 (script idempotente via Backend API, versionado no repo), exigir MFA nos papéis sensíveis, teste que varre todas as rotas e falha se alguma não declarar guard (`@PanelAuth`/`@Requires` ou `@CustomerAuth`/`@Public`) (RNF-SEG-03).
 - [ ] **US-014 — Endereços do comprador** (P) — RF-IAM-09. CEP via `PostalCodePort` (adapter ViaCEP + fake).
 

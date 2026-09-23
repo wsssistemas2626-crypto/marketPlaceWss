@@ -67,3 +67,18 @@ export interface CustomerProfileResponse {
   readonly status: 'pending_verification' | 'active' | 'blocked' | 'anonymized';
   readonly emailVerified: boolean;
 }
+
+/** Pedido de troca de senha (US-012). Resposta 202 genérica, exista ou não a conta. */
+export const requestPasswordResetRequest = z.object({
+  email: z.string().max(320),
+});
+
+export type RequestPasswordResetRequest = z.infer<typeof requestPasswordResetRequest>;
+
+/** Troca de senha com o token do e-mail (uso único, 1 hora). */
+export const completePasswordResetRequest = z.object({
+  token: z.string().max(256),
+  password: z.string().max(256),
+});
+
+export type CompletePasswordResetRequest = z.infer<typeof completePasswordResetRequest>;

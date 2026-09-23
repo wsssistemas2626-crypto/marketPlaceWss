@@ -10,6 +10,10 @@ import type {
   PasswordBreachPort,
   StorefrontLinksPort,
 } from '../application/customers/ports.js';
+import type {
+  PasswordResetLinksPort,
+  PasswordResetMailerPort,
+} from '../application/customers/password-reset.js';
 import type { CustomerAccessTokenPort } from '../application/customers/session-ports.js';
 
 /** Onde fica a loja de cada tenant — decidido pelo host (composition root). */
@@ -26,7 +30,7 @@ export const STOREFRONT_LINKS_OPTIONS = Symbol('STOREFRONT_LINKS_OPTIONS');
  * de acesso, proxy nem `Referer`.
  */
 @Injectable()
-export class TemplateStorefrontLinks implements StorefrontLinksPort {
+export class TemplateStorefrontLinks implements StorefrontLinksPort, PasswordResetLinksPort {
   constructor(@Inject(STOREFRONT_LINKS_OPTIONS) private readonly options: StorefrontLinksOptions) {}
 
   private base(): string {
@@ -45,6 +49,9 @@ export class TemplateStorefrontLinks implements StorefrontLinksPort {
     return `${this.base()}/conta/recuperar-senha`;
   }
 
+  choosePassword(token: string): string {
+    return `${this.base()}/conta/redefinir-senha#token=${encodeURIComponent(token)}`;
+  }
 }
 
 /**
@@ -55,7 +62,7 @@ export class TemplateStorefrontLinks implements StorefrontLinksPort {
  * templates por tenant.
  */
 @Injectable()
-export class HubCustomerMailer implements CustomerMailerPort {
+export class HubCustomerMailer implements CustomerMailerPort, PasswordResetMailerPort {
   constructor(private readonly hub: IntegrationHub) {}
 
   async sendVerification(input: { to: string; name: string; link: string }): Promise<void> {
@@ -107,6 +114,45 @@ export class HubCustomerMailer implements CustomerMailerPort {
     });
   }
 
+  async sendPasswordReset(input: { to: string; name: string; link: string }): Promise<void> {
+    const email = await this.hub.resolve('email');
+    await email.send({
+      to: input.to,
+      template: 'identity.password_reset',
+      subject: 'Troca de senha',
+      data: {
+        name: input.name,
+        link: input.link,
+        text: [
+          `Olá, ${input.name}!`,
+          '',
+          'Recebemos um pedido para trocar a senha da sua conta. O link abaixo vale por 1 hora e só pode ser usado uma vez:',
+          input.link,
+          '',
+          'Se não foi você, ignore esta mensagem: sua senha continua a mesma.',
+        ].join('\n'),
+      },
+    });
+  }
+
+  async sendPasswordChanged(input: { to: string; name: string; resetLink: string }): Promise<void> {
+    const email = await this.hub.resolve('email');
+    await email.send({
+      to: input.to,
+      template: 'identity.password_changed',
+      subject: 'Sua senha foi alterada',
+      data: {
+        name: input.name,
+        resetLink: input.resetLink,
+        text: [
+          `Olá, ${input.name}!`,
+          '',
+          'A senha da sua conta acabou de ser alterada, e todas as sessões abertas foram encerradas.',
+          `Se não foi você, troque a senha agora: ${input.resetLink}`,
+        ].join('\n'),
+      },
+    });
+  }
 }
 
 /** Padrões usados enquanto a plataforma não publicar outra versão. */

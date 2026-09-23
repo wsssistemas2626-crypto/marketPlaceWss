@@ -71,3 +71,13 @@ export const customerRefreshTokens = identitySchema.table('customer_refresh_toke
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Espelha `drizzle/0004_customer_password_resets.sql`. */
+export const customerPasswordResets = identitySchema.table('customer_password_resets', {
+  tokenHash: text('token_hash').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  customerId: uuid('customer_id').notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  usedAt: timestamp('used_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

@@ -3,7 +3,12 @@ import { Test } from '@nestjs/testing';
 import { RedisContainer, type StartedRedisContainer } from '@testcontainers/redis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { CUSTOMER_MAILER, type CustomerMailerPort } from '@mkt/modules-identity';
+import {
+  CUSTOMER_MAILER,
+  PASSWORD_RESET_MAILER,
+  type CustomerMailerPort,
+  type PasswordResetMailerPort,
+} from '@mkt/modules-identity';
 import {
   createPool,
   DEVELOPMENT_TENANTS,
@@ -30,7 +35,18 @@ const [lojaA, lojaB] = DEVELOPMENT_TENANTS as [
 ];
 
 /** Captura os e-mails em vez de mandar — é daqui que o teste tira o link. */
-class CarteiroDeTeste implements CustomerMailerPort {
+class CarteiroDeTeste implements CustomerMailerPort, PasswordResetMailerPort {
+  readonly trocasDeSenha: { to: string; link: string }[] = [];
+  readonly senhaAlterada: string[] = [];
+
+  async sendPasswordReset(input: { to: string; link: string }) {
+    this.trocasDeSenha.push({ to: input.to, link: input.link });
+  }
+
+  async sendPasswordChanged(input: { to: string }) {
+    this.senhaAlterada.push(input.to);
+  }
+
   readonly verificacoes: { to: string; link: string }[] = [];
   readonly tentativas: { to: string }[] = [];
 
@@ -131,6 +147,8 @@ describe.skipIf(!dockerAvailable)('cadastro de comprador (e2e)', () => {
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(CUSTOMER_MAILER)
+      .useValue(carteiro)
+      .overrideProvider(PASSWORD_RESET_MAILER)
       .useValue(carteiro)
       .compile();
     application = moduleRef.createNestApplication();
@@ -338,6 +356,68 @@ describe.skipIf(!dockerAvailable)('cadastro de comprador (e2e)', () => {
       );
       expect(conta?.failed_login_attempts).toBe(5);
       expect(conta?.locked_until).not.toBeNull();
+    });
+  });
+
+  describe('recuperação de senha (US-012)', () => {
+    const http = async () => (await import('supertest')).default(application.getHttpServer());
+    const email = 'troca@exemplo.com';
+
+    const pedirTroca = async (host: string, alvo: string) =>
+      (await http())
+        .post('/v1/store/customers/password-reset')
+        .set('host', host)
+        .set('idempotency-key', `troca-${host}-${alvo}-${Date.now()}`)
+        .send({ email: alvo });
+
+    const trocar = async (host: string, token: string, password: string) =>
+      (await http())
+        .post('/v1/store/customers/password-reset/confirm')
+        .set('host', host)
+        .send({ token, password });
+
+    const entrar = async (password: string) =>
+      (await http()).post('/v1/store/auth/login').set('host', 'loja-a.localhost').send({ email, password });
+
+    it('pedido responde igual com e sem conta; só a conta recebe o link', async () => {
+      await cadastrar('loja-a.localhost', { ...cliente, email });
+
+      const comConta = await pedirTroca('loja-a.localhost', email);
+      const semConta = await pedirTroca('loja-a.localhost', 'ninguem@exemplo.com');
+
+      expect(comConta.status).toBe(202);
+      expect(semConta.status).toBe(202);
+      expect(comConta.body).toEqual(semConta.body);
+      expect(carteiro.trocasDeSenha.map((envio) => envio.to)).toEqual([email]);
+    });
+
+    it('cross-tenant: link da loja A não troca a senha na loja B', async () => {
+      const token = tokenDo(carteiro.trocasDeSenha.at(-1)?.link);
+
+      const resposta = await trocar('loja-b.localhost', token, 'novaSenha2026');
+
+      expect(resposta.status).toBe(422);
+    });
+
+    it('troca a senha, derruba as sessões abertas e o link não serve de novo', async () => {
+      const sessaoAntiga = await entrar(cliente.password);
+      const token = tokenDo(carteiro.trocasDeSenha.at(-1)?.link);
+
+      expect((await trocar('loja-a.localhost', token, 'novaSenha2026')).status).toBe(204);
+
+      const refreshAntigo = await (
+        await http()
+      )
+        .post('/v1/store/auth/refresh')
+        .set('host', 'loja-a.localhost')
+        .send({ refreshToken: sessaoAntiga.body.refreshToken });
+      expect(refreshAntigo.status).toBe(401);
+
+      expect((await entrar(cliente.password)).status).toBe(401);
+      expect((await entrar('novaSenha2026')).status).toBe(200);
+      expect(carteiro.senhaAlterada).toContain(email);
+
+      expect((await trocar('loja-a.localhost', token, 'outraSenha2026')).status).toBe(422);
     });
   });
 });

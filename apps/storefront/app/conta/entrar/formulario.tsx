@@ -33,7 +33,8 @@ export function FormularioLogin() {
       </button>
 
       <p>
-        Ainda não tem conta? <Link href="/conta/cadastro">Criar conta</Link>
+        <Link href="/conta/recuperar-senha">Esqueci a senha</Link> · Ainda não tem conta?{' '}
+        <Link href="/conta/cadastro">Criar conta</Link>
       </p>
     </form>
   );

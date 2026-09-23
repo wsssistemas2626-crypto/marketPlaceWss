@@ -33,6 +33,14 @@ import {
   type StorefrontLinksPort,
 } from './application/customers/ports.js';
 import { CustomerSessions } from './application/customers/customer-sessions.js';
+import {
+  PASSWORD_RESET_MAILER,
+  PASSWORD_RESET_REPOSITORY,
+  PasswordReset,
+  type PasswordResetLinksPort,
+  type PasswordResetMailerPort,
+  type PasswordResetRepositoryPort,
+} from './application/customers/password-reset.js';
 import { RegisterCustomer } from './application/customers/register-customer.js';
 import {
   CUSTOMER_ACCESS_TOKENS,
@@ -50,6 +58,7 @@ import {
   CustomerSessionsController,
 } from './http/customer-sessions.controller.js';
 import { CUSTOMER_HTTP_OPTIONS, CustomersController } from './http/customers.controller.js';
+import { PasswordResetController } from './http/password-reset.controller.js';
 import { ClerkWebhookController } from './http/clerk-webhook.controller.js';
 import { PANEL_AUTH_POLICY, PanelAuthGuard, type PanelAuthPolicy } from './http/panel-auth.guard.js';
 import { CONSOLE_IDENTITY, ConsoleAuthGuard, ConsoleAuthMiddleware } from './http/console-auth.js';
@@ -65,6 +74,7 @@ import {
 } from './infrastructure/customer-adapters.js';
 import { DrizzleCustomerRepository } from './infrastructure/drizzle-customer.repository.js';
 import { DrizzleOrgLinkRepository } from './infrastructure/drizzle-org-link.repository.js';
+import { DrizzlePasswordResetRepository } from './infrastructure/drizzle-password-reset.repository.js';
 import { DrizzleRefreshTokenRepository } from './infrastructure/drizzle-refresh-token.repository.js';
 
 export interface IdentityModuleOptions {
@@ -88,7 +98,7 @@ export interface IdentityModuleOptions {
   };
 }
 
-/** Compradores: cadastro e confirmação (US-010), sessões e login (US-011). */
+/** Compradores: cadastro e confirmação (US-010), sessões (US-011), troca de senha (US-012). */
 function customerProviders(options: NonNullable<IdentityModuleOptions['customers']>): Provider[] {
   return [
     DrizzleCustomerRepository,
@@ -100,9 +110,13 @@ function customerProviders(options: NonNullable<IdentityModuleOptions['customers
       useFactory: () => new JwtCustomerAccessTokens(options.tokenKeys, new SystemClock()),
     },
     { provide: APP_GUARD, useClass: CustomerAuthGuard },
-    { provide: CUSTOMER_MAILER, useClass: HubCustomerMailer },
+    HubCustomerMailer,
+    { provide: CUSTOMER_MAILER, useExisting: HubCustomerMailer },
+    { provide: PASSWORD_RESET_MAILER, useExisting: HubCustomerMailer },
+    { provide: PASSWORD_RESET_REPOSITORY, useClass: DrizzlePasswordResetRepository },
     { provide: PASSWORD_BREACH, useClass: NoPasswordBreachCheck },
-    { provide: STOREFRONT_LINKS, useClass: TemplateStorefrontLinks },
+    TemplateStorefrontLinks,
+    { provide: STOREFRONT_LINKS, useExisting: TemplateStorefrontLinks },
     { provide: LEGAL_VERSIONS, useClass: ConfigLegalVersions },
     {
       provide: STOREFRONT_LINKS_OPTIONS,
@@ -164,6 +178,38 @@ function customerProviders(options: NonNullable<IdentityModuleOptions['customers
       inject: [CUSTOMER_REPOSITORY, CUSTOMER_CREDENTIALS, REFRESH_TOKEN_REPOSITORY, CUSTOMER_ACCESS_TOKENS],
     },
     {
+      provide: PasswordReset,
+      useFactory: (
+        customers: CustomerRepositoryPort,
+        resets: PasswordResetRepositoryPort,
+        mailer: PasswordResetMailerPort,
+        links: PasswordResetLinksPort,
+        breaches: PasswordBreachPort,
+      ) => {
+        const logger = new Logger(PasswordReset.name);
+        return new PasswordReset({
+          customers,
+          resets,
+          mailer,
+          links,
+          breaches,
+          hasher: new Argon2idPasswordHasher(),
+          clock: new SystemClock(),
+          onMailFailure: (error) =>
+            logger.error(
+              `E-mail de troca de senha não saiu: ${error instanceof Error ? error.name : 'erro'}`,
+            ),
+        });
+      },
+      inject: [
+        CUSTOMER_REPOSITORY,
+        PASSWORD_RESET_REPOSITORY,
+        PASSWORD_RESET_MAILER,
+        TemplateStorefrontLinks,
+        PASSWORD_BREACH,
+      ],
+    },
+    {
       provide: VerifyCustomerEmail,
       useFactory: (customers: CustomerRepositoryPort) =>
         new VerifyCustomerEmail(customers, new SystemClock()),
@@ -192,7 +238,12 @@ export class IdentityModule implements NestModule {
         ClerkWebhookController,
         ...(options.customers === undefined
           ? []
-          : [CustomersController, CustomerSessionsController, CustomerAccountController]),
+          : [
+              CustomersController,
+              CustomerSessionsController,
+              CustomerAccountController,
+              PasswordResetController,
+            ]),
       ],
       providers: [
         { provide: WORKFORCE_IDENTITY, useValue: options.workforceIdentity },
