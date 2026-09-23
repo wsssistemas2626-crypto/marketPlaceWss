@@ -16,6 +16,12 @@ export interface ApiEnv {
   readonly cell: string;
   /** Segredo do edge; sem ele o X-Forwarded-Host é ignorado (ADR-014 §6). */
   readonly edgeSharedSecret?: string;
+  /**
+   * RF-IAM-14: exige segundo fator dos papéis sensíveis e do staff. Sempre
+   * ligado em produção; fora dela, `PANEL_MFA_ENFORCED=true` liga — só faz
+   * sentido com MFA habilitado na instância da Clerk (checklist §G).
+   */
+  readonly panelMfaEnforced: boolean;
   /** Credenciais da aplicação Clerk Console (staff). */
   readonly consoleClerk?: ApiEnv['clerk'];
   /** Credenciais da Clerk (ADR-013). Ausentes = adapter fake em desenvolvimento. */
@@ -89,6 +95,7 @@ export function loadApiEnv(): ApiEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv: process.env.NODE_ENV ?? 'development',
     cell: process.env.PLATFORM_CELL ?? 'shared-1',
+    panelMfaEnforced: process.env.NODE_ENV === 'production' || process.env.PANEL_MFA_ENFORCED === 'true',
     // em desenvolvimento uma chave fixa basta; em produção vem do KMS (checklist §F)
     integrationsEncryptionKey:
       process.env.INTEGRATIONS_ENCRYPTION_KEY === undefined || process.env.INTEGRATIONS_ENCRYPTION_KEY === ''

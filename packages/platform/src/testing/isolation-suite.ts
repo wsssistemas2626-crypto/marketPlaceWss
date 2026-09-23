@@ -13,6 +13,9 @@ export interface RegisteredRoute {
   readonly method: HttpMethod;
   /** Caminho como o framework registrou, ex.: `/v1/store/widgets/:id`. */
   readonly path: string;
+  /** Classe e método de origem — é neles que ficam os decorators de acesso. */
+  readonly controller?: object;
+  readonly handler?: object;
 }
 
 /** Público da rota — define qual credencial o teste usa. */

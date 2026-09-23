@@ -166,6 +166,11 @@ export interface VerifiedPanelToken {
   readonly sellerId?: string;
   readonly roles: readonly string[];
   readonly permissions: readonly string[];
+  /**
+   * A sessão passou por um segundo fator (RF-IAM-14). Ausente quando o token
+   * não traz a informação — para quem exige MFA, ausente vale como "não".
+   */
+  readonly secondFactorVerified?: boolean;
 }
 
 export interface WorkforceIdentityPort {

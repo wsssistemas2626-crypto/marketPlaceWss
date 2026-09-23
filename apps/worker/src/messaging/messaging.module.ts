@@ -32,6 +32,8 @@ import { OutboxRelayService } from './outbox-relay.service.js';
     IdentityModule.register({
       workforceIdentity: createWorkforceIdentity(),
       consoleIdentity: createWorkforceIdentity(),
+      // o worker não atende rotas de painel: a política não tem onde valer
+      policy: { mfaEnforced: false },
     }),
     // o tenancy consulta a saúde das integrações para o console
     IntegrationsModule.register({

@@ -20,3 +20,4 @@ export {
   type TenantStatusChangedData,
 } from './events/tenancy-events.js';
 export * from './integrations/ports.js';
+export * from './identity/panel-access.js';

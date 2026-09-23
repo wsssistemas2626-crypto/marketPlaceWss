@@ -18,6 +18,7 @@
     "seed:dev": "turbo run seed:dev",
     "ca:local": "node scripts/exportar-ca-local.mjs",
     "link:orgs": "turbo run build --filter=@mkt/api --output-logs=errors-only && node apps/api/dist/link-orgs.js",
+    "clerk:roles": "turbo run build --filter=@mkt/api --output-logs=errors-only && node apps/api/dist/sync-clerk-roles.js",
     "gen:openapi": "turbo run gen:openapi",
     "gen:sdk": "turbo run gen:sdk",
     "format": "prettier --write .",

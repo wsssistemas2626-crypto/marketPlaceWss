@@ -1,6 +1,7 @@
 import { Body, Controller, Headers, HttpCode, Inject, Post } from '@nestjs/common';
 
 import type { WorkforceIdentityPort } from '@mkt/contracts';
+import { Public } from '@mkt/platform';
 import { ValidationError } from '@mkt/shared-kernel';
 
 import { WORKFORCE_IDENTITY } from '../application/panel-session.js';
@@ -14,6 +15,7 @@ import { SyncClerkWebhook } from '../application/sync-clerk-webhook.js';
  * calculada sobre o corpo **cru**, por isso ele é serializado de volta aqui.
  */
 @Controller('hooks/identity/clerk')
+@Public('webhook: a assinatura svix da Clerk é a credencial')
 export class ClerkWebhookController {
   constructor(
     @Inject(WORKFORCE_IDENTITY) private readonly identity: WorkforceIdentityPort,

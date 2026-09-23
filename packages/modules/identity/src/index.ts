@@ -2,7 +2,9 @@
 export {
   assertKind,
   assertPermission,
+  assertMfa,
   InvalidPanelTokenError,
+  MfaRequiredError,
   MissingPermissionError,
   ORG_LINK_REPOSITORY,
   OrganizationNotLinkedError,
@@ -23,7 +25,20 @@ export {
   type ConsoleRequest,
   type ConsoleSession,
 } from './http/console-auth.js';
-export { PanelAuth, PanelAuthGuard, Requires } from './http/panel-auth.guard.js';
+export {
+  PANEL_AUTH_POLICY,
+  PanelAuth,
+  PanelAuthGuard,
+  Requires,
+  type PanelAuthPolicy,
+} from './http/panel-auth.guard.js';
+export {
+  CUSTOMER_AUTH,
+  describeRouteAccess,
+  findRouteAccessViolations,
+  type RouteAccess,
+  type RouteToAudit,
+} from './http/route-access.js';
 export { PanelAuthMiddleware, type PanelRequest } from './http/panel-auth.middleware.js';
 export { IdentityModule, type IdentityModuleOptions } from './identity.module.js';
 export { DrizzleOrgLinkRepository } from './infrastructure/drizzle-org-link.repository.js';

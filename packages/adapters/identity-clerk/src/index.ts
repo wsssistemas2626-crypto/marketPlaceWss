@@ -29,6 +29,11 @@ interface SessionClaims {
   v?: number;
   o?: { id?: string; rol?: string; slg?: string; per?: string; fpm?: string };
   fea?: string;
+  /**
+   * "Factor verification age": minutos desde o primeiro e o segundo fator da
+   * sessão; `-1` no segundo significa que ele não foi verificado.
+   */
+  fva?: [number, number];
   /** Vêm do template de sessão, quando configurado — atalho, nunca fonte da verdade. */
   org_kind?: OrganizationKind;
   tenant_id?: string;
@@ -100,6 +105,8 @@ export function panelTokenFromClaims(
     ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
     roles: papel === undefined ? [] : [normalizarPapel(papel)],
     permissions: expandPermissions(claims),
+    secondFactorVerified:
+      Array.isArray(claims.fva) && typeof claims.fva[1] === 'number' && claims.fva[1] >= 0,
   };
 }
 
@@ -305,4 +312,5 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
   }
 }
 
+export { ClerkRoleCatalog, type RoleCatalogReport } from './role-catalog.js';
 export type { ClerkClient };

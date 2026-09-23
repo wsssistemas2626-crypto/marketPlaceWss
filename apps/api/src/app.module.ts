@@ -34,6 +34,7 @@ import { StorefrontTenancyModule } from './tenancy/tenancy.module.js';
     IdentityModule.register({
       workforceIdentity: createWorkforceIdentity(loadApiEnv()),
       consoleIdentity: createConsoleIdentity(loadApiEnv()),
+      policy: { mfaEnforced: loadApiEnv().panelMfaEnforced },
     }),
     TemplateModule,
   ],

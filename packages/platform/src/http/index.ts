@@ -22,3 +22,4 @@ export {
   type RateLimitConfig,
 } from './rate-limit.guard.js';
 export { RedisIdempotencyStore, type IdempotencyRedis } from './redis-idempotency.store.js';
+export { Public, PUBLIC_ROUTE } from './public-route.js';

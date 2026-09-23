@@ -10,7 +10,7 @@ import {
 } from './application/panel-session.js';
 import { SyncClerkWebhook } from './application/sync-clerk-webhook.js';
 import { ClerkWebhookController } from './http/clerk-webhook.controller.js';
-import { PanelAuthGuard } from './http/panel-auth.guard.js';
+import { PANEL_AUTH_POLICY, PanelAuthGuard, type PanelAuthPolicy } from './http/panel-auth.guard.js';
 import { CONSOLE_IDENTITY, ConsoleAuthGuard, ConsoleAuthMiddleware } from './http/console-auth.js';
 import { PanelAuthMiddleware } from './http/panel-auth.middleware.js';
 import { DrizzleOrgLinkRepository } from './infrastructure/drizzle-org-link.repository.js';
@@ -20,6 +20,8 @@ export interface IdentityModuleOptions {
   readonly workforceIdentity: WorkforceIdentityPort;
   /** Adapter do console (aplicação Clerk separada, ADR-013). */
   readonly consoleIdentity: WorkforceIdentityPort;
+  /** MFA dos papéis sensíveis e do staff (RF-IAM-14). */
+  readonly policy: PanelAuthPolicy;
 }
 
 /**
@@ -42,6 +44,7 @@ export class IdentityModule implements NestModule {
       providers: [
         { provide: WORKFORCE_IDENTITY, useValue: options.workforceIdentity },
         { provide: CONSOLE_IDENTITY, useValue: options.consoleIdentity },
+        { provide: PANEL_AUTH_POLICY, useValue: options.policy },
         { provide: ORG_LINK_REPOSITORY, useClass: DrizzleOrgLinkRepository },
         { provide: APP_GUARD, useClass: PanelAuthGuard },
         { provide: APP_GUARD, useClass: ConsoleAuthGuard },

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common';
 
 import { PanelAuth, Requires } from '@mkt/modules-identity';
-import { requireTenant } from '@mkt/platform';
+import { Public, requireTenant } from '@mkt/platform';
 import { SystemClock, ValidationError } from '@mkt/shared-kernel';
 
 import { ThemeService } from '../application/theme-service.js';
@@ -65,6 +65,7 @@ export class AdminThemeController {
  * O storefront chama isto no servidor e injeta as variáveis CSS.
  */
 @Controller('store/theme')
+@Public('vitrine: o tema publicado é público e o tenant vem do host')
 export class StoreThemeController {
   constructor(private readonly themes: ThemeService) {}
 

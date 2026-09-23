@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 
-import { Idempotent, requireTenant } from '@mkt/platform';
+import { Idempotent, Public, requireTenant } from '@mkt/platform';
 import { unwrap, ValidationError } from '@mkt/shared-kernel';
 
 import { CreateWidget } from '../application/create-widget.js';
@@ -21,6 +21,7 @@ const toResponse = (widget: Widget): WidgetResponse => {
 
 /** Rotas de exemplo do módulo `_template` (público: comprador). */
 @Controller('store/widgets')
+@Public('módulo de exemplo (_template): exercita o tenant resolvido pelo host')
 export class WidgetsController {
   constructor(
     private readonly createWidget: CreateWidget,

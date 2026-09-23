@@ -1,6 +1,6 @@
 import { Controller, Get, Res } from '@nestjs/common';
 
-import type { HealthReport } from '@mkt/platform';
+import { Public, type HealthReport } from '@mkt/platform';
 
 import { HealthService } from './health.service.js';
 
@@ -10,6 +10,7 @@ interface StatusCarrier {
 }
 
 @Controller('health')
+@Public('health check da plataforma: não expõe dado de tenant')
 export class HealthController {
   constructor(private readonly health: HealthService) {}
 

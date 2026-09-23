@@ -102,4 +102,12 @@ describe('panelTokenFromClaims', () => {
   it('token sem usuário é recusado', () => {
     expect(() => panelTokenFromClaims({ o: { id: 'org_1' } })).toThrow(/usuário/);
   });
+
+  it('segundo fator verificado vem do `fva`: -1 no segundo item é "não verificado" (RF-IAM-14)', () => {
+    const base = { sub: 'user_1', o: { id: 'org_1', rol: 'admin' } };
+
+    expect(panelTokenFromClaims({ ...base, fva: [3, 2] }).secondFactorVerified).toBe(true);
+    expect(panelTokenFromClaims({ ...base, fva: [3, -1] }).secondFactorVerified).toBe(false);
+    expect(panelTokenFromClaims(base).secondFactorVerified).toBe(false);
+  });
 });
