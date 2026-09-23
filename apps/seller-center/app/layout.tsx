@@ -12,7 +12,15 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <ClerkProvider localization={ptBR} signInUrl="/sign-in" signUpUrl="/sign-up" afterSignOutUrl="/sign-in">
+    <ClerkProvider
+      localization={ptBR}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      /* sem um destino explícito, a Clerk manda para o portal hospedado depois do login */
+      signInFallbackRedirectUrl="/"
+      signUpFallbackRedirectUrl="/"
+      afterSignOutUrl="/sign-in"
+    >
       <html lang="pt-BR">
         <body>{children}</body>
       </html>
