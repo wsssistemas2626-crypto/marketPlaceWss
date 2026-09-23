@@ -33,10 +33,16 @@ export async function panelFetch<T>(path: string, init?: RequestInit): Promise<P
 
     if (response.ok) return { data: (await response.json()) as T };
 
-    const problem = (await response.json().catch(() => ({}))) as { title?: string; detail?: string };
+    const problem = (await response.json().catch(() => ({}))) as {
+      title?: string;
+      detail?: string;
+      code?: string;
+    };
+    // só o `organization_not_linked` é falta de vínculo: os demais 403 (tipo de
+    // organização, permissão, módulo do plano, loja suspensa) têm causa própria
     return {
       error:
-        response.status === 403
+        problem.code === 'organization_not_linked'
           ? 'Sua organização não está vinculada a nenhum tenant (identity.org_links).'
           : (problem.detail ?? problem.title ?? `A API respondeu ${response.status}.`),
     };
