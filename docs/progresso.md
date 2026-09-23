@@ -88,6 +88,11 @@
 - **ADR-015 (Proposto)**: fronteiras verificadas com regras nativas do ESLint em vez de `eslint-plugin-boundaries`.
   O plugin 7.2.0 não acusou `@nestjs/common` dentro de `domain/` e a API nova não está documentada offline.
   **Precisa da sua aprovação** (ou da escolha por dependency-cruiser).
+- **Antivírus com inspeção de TLS (Norton) quebra o login dos painéis**: o sandbox de *edge runtime* do Next usa a
+  lista de CAs embutida, não a do Windows, então o middleware da Clerk falhava ao buscar o JWKS
+  (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`), a sessão era lida como deslogada e o login entrava em laço —
+  `/` → `/sign-in` → "já está logado" → `/`. `pnpm ca:local` exporta a raiz da máquina para `.certs/`
+  (fora do versionamento) e o `with-env.mjs` a passa como `NODE_EXTRA_CA_CERTS`.
 - **Next.js não lê o `.env` da raiz**: em monorepo ele só procura dentro da pasta do app, então o storefront
   subia sem `EDGE_SHARED_SECRET`, ignorava o `X-Forwarded-Host` e toda loja virava "Loja não encontrada".
   Os 4 apps Next agora sobem por `scripts/with-env.mjs`, que carrega o `.env` da raiz antes do `next dev`.
