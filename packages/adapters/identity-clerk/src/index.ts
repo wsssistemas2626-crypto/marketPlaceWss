@@ -21,12 +21,86 @@ export interface ClerkAdapterOptions {
 
 interface SessionClaims {
   sub?: string;
+  /** Claims v1 (formato antigo do token de sessão). */
   org_id?: string;
-  org_kind?: OrganizationKind;
   org_role?: string;
   org_permissions?: string[];
+  /** Claims v2: a organização ativa vem aninhada e o papel vem sem prefixo. */
+  v?: number;
+  o?: { id?: string; rol?: string; slg?: string; per?: string; fpm?: string };
+  fea?: string;
+  /** Vêm do template de sessão, quando configurado — atalho, nunca fonte da verdade. */
+  org_kind?: OrganizationKind;
   tenant_id?: string;
   seller_id?: string;
+}
+
+/** Papel sempre no formato `org:<papel>`, venha ele de v1 (`org:admin`) ou de v2 (`admin`). */
+const normalizarPapel = (papel: string): string => (papel.startsWith('org:') ? papel : `org:${papel}`);
+
+/**
+ * Permissões do token v2.
+ *
+ * O formato é compacto para caber no cookie: `fea` lista as funcionalidades
+ * (com escopo `o:` para organização), `o.per` lista os verbos e `o.fpm` traz,
+ * para cada funcionalidade, um bitmask dizendo quais verbos valem. O resultado
+ * é remontado no formato `org:<funcionalidade>:<verbo>`, o mesmo que o
+ * `@Requires` usa.
+ */
+export function expandPermissions(claims: SessionClaims): string[] {
+  if (claims.org_permissions !== undefined) return claims.org_permissions;
+
+  const funcionalidades = (claims.fea ?? '')
+    .split(',')
+    .map((parte) => parte.trim())
+    .filter((parte) => parte.startsWith('o:'))
+    .map((parte) => parte.slice(2));
+
+  const verbos = (claims.o?.per ?? '')
+    .split(',')
+    .map((verbo) => verbo.trim())
+    .filter((verbo) => verbo !== '');
+
+  const mascaras = (claims.o?.fpm ?? '').split(',').map((mascara) => Number.parseInt(mascara.trim(), 10));
+
+  return funcionalidades.flatMap((funcionalidade, indice) => {
+    const mascara = mascaras[indice];
+    if (mascara === undefined || Number.isNaN(mascara)) return [];
+
+    return verbos
+      .filter((_, posicao) => (mascara & (1 << posicao)) !== 0)
+      .map((verbo) => `org:${funcionalidade}:${verbo}`);
+  });
+}
+
+/**
+ * Traduz as claims verificadas para o formato do nosso port.
+ *
+ * Existe separada do `verifyToken` para ser testável sem rede: é aqui que mora
+ * a diferença entre as duas versões de token da Clerk, que já custou um 401 em
+ * todo o painel quando a instância passou a emitir v2.
+ */
+export function panelTokenFromClaims(
+  claims: SessionClaims,
+  options: { requireOrganization?: boolean } = {},
+): VerifiedPanelToken {
+  const organizationId = claims.o?.id ?? claims.org_id;
+  const papel = claims.o?.rol ?? claims.org_role;
+
+  if (claims.sub === undefined) throw new Error('Token sem usuário');
+  if (options.requireOrganization !== false && organizationId === undefined) {
+    throw new Error('Token sem organização ativa');
+  }
+
+  return {
+    userId: claims.sub,
+    organizationId: organizationId ?? 'console',
+    organizationKind: claims.org_kind ?? 'tenant',
+    ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
+    ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
+    roles: papel === undefined ? [] : [normalizarPapel(papel)],
+    permissions: expandPermissions(claims),
+  };
 }
 
 /**
@@ -54,20 +128,11 @@ export class ClerkWorkforceIdentity implements WorkforceIdentityPort {
       authorizedParties: [...this.options.authorizedParties],
     })) as SessionClaims;
 
-    if (claims.sub === undefined) throw new Error('Token sem usuário');
-    if (this.options.requireOrganization !== false && claims.org_id === undefined) {
-      throw new Error('Token sem organização ativa');
-    }
-
-    return {
-      userId: claims.sub,
-      organizationId: claims.org_id ?? 'console',
-      organizationKind: claims.org_kind ?? 'tenant',
-      ...(claims.tenant_id === undefined ? {} : { tenantId: claims.tenant_id }),
-      ...(claims.seller_id === undefined ? {} : { sellerId: claims.seller_id }),
-      roles: claims.org_role === undefined ? [] : [claims.org_role],
-      permissions: claims.org_permissions ?? [],
-    };
+    return panelTokenFromClaims(claims, {
+      ...(this.options.requireOrganization === undefined
+        ? {}
+        : { requireOrganization: this.options.requireOrganization }),
+    });
   }
 
   async createOrganization(input: {
