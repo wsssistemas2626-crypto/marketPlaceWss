@@ -22,6 +22,10 @@ export interface ApiEnv {
    * sentido com MFA habilitado na instância da Clerk (checklist §G).
    */
   readonly panelMfaEnforced: boolean;
+  /** Mailpit local: com ele, o e-mail "fake" é entregue de verdade (só fora de produção). */
+  readonly devSmtpUrl?: string;
+  /** Loja de cada tenant, para links de e-mail (`{slug}` é substituído). */
+  readonly storefrontUrlTemplate: string;
   /** Credenciais da aplicação Clerk Console (staff). */
   readonly consoleClerk?: ApiEnv['clerk'];
   /** Credenciais da Clerk (ADR-013). Ausentes = adapter fake em desenvolvimento. */
@@ -95,6 +99,10 @@ export function loadApiEnv(): ApiEnv {
     redisUrl: required('REDIS_URL'),
     nodeEnv: process.env.NODE_ENV ?? 'development',
     cell: process.env.PLATFORM_CELL ?? 'shared-1',
+    ...(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || !process.env.SMTP_URL
+      ? {}
+      : { devSmtpUrl: process.env.SMTP_URL }),
+    storefrontUrlTemplate: process.env.STOREFRONT_URL_TEMPLATE ?? 'http://{slug}.localhost:3000',
     panelMfaEnforced: process.env.NODE_ENV === 'production' || process.env.PANEL_MFA_ENFORCED === 'true',
     // em desenvolvimento uma chave fixa basta; em produção vem do KMS (checklist §F)
     integrationsEncryptionKey:

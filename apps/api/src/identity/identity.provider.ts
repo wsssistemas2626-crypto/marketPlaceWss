@@ -53,3 +53,11 @@ export function createConsoleIdentity(env: ApiEnv): WorkforceIdentityPort {
     requireOrganization: false,
   });
 }
+
+/** Compradores (US-010): links da loja nos e-mails e borda confiável para o IP. */
+export function customerOptions(env: ApiEnv): { storefrontUrlTemplate: string; edgeSharedSecret?: string } {
+  return {
+    storefrontUrlTemplate: env.storefrontUrlTemplate,
+    ...(env.edgeSharedSecret === undefined ? {} : { edgeSharedSecret: env.edgeSharedSecret }),
+  };
+}

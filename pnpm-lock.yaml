@@ -509,6 +509,9 @@ importers:
       '@mkt/contracts':
         specifier: workspace:*
         version: link:../../contracts
+      '@mkt/modules-integrations':
+        specifier: workspace:*
+        version: link:../integrations
       '@mkt/platform':
         specifier: workspace:*
         version: link:../../platform

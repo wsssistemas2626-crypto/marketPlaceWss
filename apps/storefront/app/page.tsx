@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { fetchFromApi, type StoreUnavailable } from '../lib/api';
 
 interface TenantContext {
@@ -43,6 +45,9 @@ export default async function Home() {
     <main style={{ padding: 'calc(var(--mkt-space, 0.75rem) * 3)', maxWidth: '60rem', margin: '0 auto' }}>
       <h1 style={{ fontWeight: 'var(--mkt-heading-weight, 700)' as never }}>Loja {tenant.slug}</h1>
       <p>Vitrine do comprador. O catálogo chega nos próximos marcos da Fase 1.</p>
+      <p>
+        <Link href="/conta/cadastro">Criar conta</Link>
+      </p>
       <button
         type="button"
         style={{

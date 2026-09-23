@@ -7,7 +7,7 @@ import { DATABASE_POOL, withTransaction, type DatabasePool } from '@mkt/platform
 import { SystemClock } from '@mkt/shared-kernel';
 
 import type { OrgLink, OrgLinkRepositoryPort } from '../application/panel-session.js';
-import { orgLinks, workforceUsers } from './org-link.schema.js';
+import { orgLinks, workforceUsers } from './identity.schema.js';
 
 /**
  * Repositório do vínculo organização → tenant.

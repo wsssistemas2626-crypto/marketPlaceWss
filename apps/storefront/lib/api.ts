@@ -15,10 +15,13 @@ export async function tenantHeaders(): Promise<Record<string, string>> {
   const incoming = await headers();
   const host = incoming.get('x-forwarded-host') ?? incoming.get('host') ?? '';
   const secret = process.env.EDGE_SHARED_SECRET ?? '';
+  // IP do comprador (consentimento LGPD): a API só aceita junto com o segredo
+  const clientIp = incoming.get('x-forwarded-for');
 
   return {
     'x-forwarded-host': host,
     ...(secret === '' ? {} : { 'x-edge-secret': secret }),
+    ...(secret === '' || clientIp === null ? {} : { 'x-forwarded-for': clientIp }),
   };
 }
 
@@ -49,5 +52,47 @@ export async function fetchFromApi<T>(path: string): Promise<ApiResult<T>> {
     return { unavailable: 'not_found' };
   } catch {
     return { unavailable: 'offline' };
+  }
+}
+
+/** Resultado de uma ação do comprador: sucesso, ou a mensagem e o campo do erro. */
+export interface ActionResult<T> {
+  readonly data?: T;
+  readonly error?: string;
+  /** Campo apontado pela API (`document`, `password`…) para destacar no formulário. */
+  readonly field?: string;
+}
+
+/**
+ * POST numa rota do storefront, no contexto do tenant do host. Rotas que criam
+ * recurso exigem `Idempotency-Key` (CLAUDE.md §4.10): cada envio de formulário
+ * gera uma chave nova.
+ */
+export async function postToApi<T>(
+  path: string,
+  body: unknown,
+  options: { idempotent?: boolean } = {},
+): Promise<ActionResult<T>> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method: 'POST',
+      headers: {
+        ...(await tenantHeaders()),
+        'content-type': 'application/json',
+        ...(options.idempotent === true ? { 'idempotency-key': crypto.randomUUID() } : {}),
+      },
+      body: JSON.stringify(body),
+      cache: 'no-store',
+    });
+
+    if (response.ok) return { data: (await response.json()) as T };
+
+    const problem = (await response.json().catch(() => ({}))) as { title?: string; field?: string };
+    return {
+      error: problem.title ?? 'Não foi possível concluir agora. Tente de novo.',
+      ...(problem.field === undefined ? {} : { field: problem.field }),
+    };
+  } catch {
+    return { error: 'Estamos com instabilidade. Tente de novo em instantes.' };
   }
 }

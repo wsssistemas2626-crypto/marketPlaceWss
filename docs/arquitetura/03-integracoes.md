@@ -113,6 +113,7 @@ export interface CreateChargeInput {
 ### Catálogo inicial de eventos
 | Evento | Público | Consumidores internos |
 |---|---|---|
+| `identity.customer.registered/verified` (v1, só `customerId`) | não | notifications (boas-vindas, Fase 1.9) |
 | `sellers.seller.approved/suspended/reactivated` | não | offers, search, notifications, identity |
 | `catalog.product.published/updated/unpublished` | sim | search, notifications |
 | `offers.offer.changed/out_of_stock` | sim | search |

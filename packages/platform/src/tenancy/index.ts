@@ -17,6 +17,7 @@ export {
 export {
   resolveRequestHost,
   TenantContextMiddleware,
+  resolveClientIp,
   TENANT_RESOLUTION_CONFIG,
   type HostCarrier,
   type TenantResolutionConfig,

@@ -42,3 +42,11 @@ export {
 export { PanelAuthMiddleware, type PanelRequest } from './http/panel-auth.middleware.js';
 export { IdentityModule, type IdentityModuleOptions } from './identity.module.js';
 export { DrizzleOrgLinkRepository } from './infrastructure/drizzle-org-link.repository.js';
+export {
+  CUSTOMER_MAILER,
+  CUSTOMER_REPOSITORY,
+  type CustomerMailerPort,
+  type CustomerRepositoryPort,
+} from './application/customers/ports.js';
+export { RegisterCustomer, type RegisterCustomerCommand } from './application/customers/register-customer.js';
+export { VerifyCustomerEmail } from './application/customers/verify-customer-email.js';

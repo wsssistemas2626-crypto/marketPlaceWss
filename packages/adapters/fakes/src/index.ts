@@ -324,3 +324,4 @@ export const fakeAdapterFactories: Readonly<Record<IntegrationCategory, () => un
   workforce_identity: () => new FakeWorkforceIdentity(),
   domain_provisioning: () => new FakeDomainProvisioning(),
 };
+export { MailpitEmail } from './mailpit-email.js';

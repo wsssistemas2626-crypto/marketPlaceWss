@@ -193,7 +193,7 @@ RF-TEN-01/02 · RNF-TEN-03
 
 > **Escopo do E01:** identidade própria dos **compradores** (storefront). Login de painéis é Clerk (US-082).
 
-### US-010 — Cadastro de comprador
+### US-010 — Cadastro de comprador ✅
 **Como** visitante **eu quero** criar minha conta **para que** eu possa comprar.
 ```gherkin
 Cenário: cadastro válido

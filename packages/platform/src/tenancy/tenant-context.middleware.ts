@@ -44,6 +44,29 @@ export function resolveRequestHost(request: HostCarrier, config: TenantResolutio
 }
 
 /**
+ * IP de quem está do outro lado (consentimento LGPD, auditoria).
+ *
+ * Mesma regra do host: `X-Forwarded-For` só vale acompanhado do segredo do
+ * edge — senão qualquer cliente escolheria o IP que fica registrado. Sem
+ * borda confiável, vale o endereço da conexão.
+ */
+export function resolveClientIp(
+  request: HostCarrier & { readonly ip?: string; readonly socket?: { readonly remoteAddress?: string } },
+  config: Pick<TenantResolutionConfig, 'edgeSharedSecret'>,
+): string {
+  const trusted =
+    config.edgeSharedSecret !== undefined &&
+    config.edgeSharedSecret !== '' &&
+    header(request, 'x-edge-secret') === config.edgeSharedSecret;
+
+  const forwarded = trusted ? header(request, 'x-forwarded-for')?.split(',')[0]?.trim() : undefined;
+  const address = forwarded ?? request.ip ?? request.socket?.remoteAddress ?? '0.0.0.0';
+
+  // IPv4 mapeado em IPv6 (`::ffff:1.2.3.4`) vira o IPv4
+  return address.replace(/^::ffff:/, '');
+}
+
+/**
  * Abre o `TenantContext` para rotas do storefront e da API pública por host.
  *
  * Note que **nada** aqui lê `tenantId` do corpo, da query ou de header livre

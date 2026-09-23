@@ -5,10 +5,11 @@
 
 ## Estado atual
 - **Fase:** 1 — MVP transacional
-- **Marco atual:** 1.0 — Tenancy de produto (concluído)
-- **Branch de trabalho:** `fase-1/m10-tenancy-de-produto` (PR #6)
-- **Próxima story:** marco 1.1 — identidade (US-013, US-083, US-010, US-012, US-014)
-- **Última atualização:** 2026-09-22
+- **Marco atual:** 1.1 — Identidade (em andamento)
+- **Branch de trabalho:** `fase-1/m11-identidade` (empilhada sobre `fase-1/m10-tenancy-de-produto`: os PRs #1–#6
+  ainda não entraram na `main`)
+- **Próxima story:** US-011 (login, refresh e logout do comprador) → US-012 → US-014
+- **Última atualização:** 2026-09-23
 
 ## Checkpoints da Fase 0
 | Checkpoint | Stories | Status | Branch / PR |
@@ -18,6 +19,20 @@
 | C3 — Plataforma e Clerk | US-006, US-007, US-073, US-009, US-082 | ✅ | PR #3 |
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ CI verde | PR #4 |
 | C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` (PR #5) |
+
+## Fase 1 — marco 1.1 (em andamento)
+Ordem: US-013 → US-083 → US-010 → **US-011** → US-012 → US-014. A US-011 não estava na lista do marco no plano,
+mas a US-012 (derrubar sessões) e a US-014 (comprador logado) dependem dela — incluída.
+- **US-013** — catálogo de papéis/permissões em `@mkt/contracts`; `pnpm clerk:roles` sincroniza com a Clerk pela
+  Backend API (idempotente); API descarta papel de outro tipo de organização e exige MFA (`fva`) dos papéis
+  sensíveis e do staff; teste que audita **todas** as rotas (RNF-SEG-03), com `@Public(motivo)` explícito.
+- **US-083** — marca do tenant (tema publicado) e `OrganizationSwitcher` no cabeçalho do admin e do seller center,
+  com aviso por causa quando a organização ativa é recusada. Corrigido: sem template de sessão, `org_kind` ausente
+  virava "tenant" e o seller center recusava organização de seller.
+- **US-010** — cadastro de comprador por tenant (`UNIQUE(tenant_id, email)`): CPF/CNPJ, senha forte, Argon2id nativo,
+  aceite de termos com versão/data/IP, confirmação por link de 24 h (token só como SHA-256 no banco, no fragmento
+  da URL), resposta genérica para e-mail existente. Telas `/conta/cadastro` e `/conta/confirmar` no storefront.
+  Em desenvolvimento o e-mail "fake" é entregue no Mailpit (http://localhost:8025).
 
 ## Fase 1 — marco 1.0 (concluído — PR #6)
 - **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação
@@ -65,6 +80,15 @@
   Railway**: a seção B do checklist está pendente e não há credencial neste ambiente.
 
 ## Bloqueios e pendências
+- **Marco 1.1 — rodar `pnpm clerk:roles`** na instância de desenvolvimento da Clerk (a sessão do agente não tem
+  permissão para usar a chave). Depois, habilitar MFA (TOTP) na aplicação Plataforma e "exigir MFA" na Console
+  (dashboard), e só então `PANEL_MFA_ENFORCED=true` localmente.
+- **Rate limit por IP atrás do storefront**: quem chama a API é o servidor Next, então todos os compradores
+  compartilham o IP dele. O IP real só chega com `X-Forwarded-For` + segredo do edge (usado hoje só no
+  consentimento). Ajustar o `RateLimitGuard` antes do go-live (anotado para a US-086).
+- **Senha vazada (k-anonymity/HIBP)**: `PasswordBreachPort` existe com implementação desligada — decidir se liga.
+- **Decisão D11** (conta de comprador isolada ou única) segue aberta no checklist; implementado o padrão do ADR-013
+  (isolada por tenant).
 - **Checklist §B inteira** (conta Railway Pro, projeto, ambientes, CLI, serviços de dados, bootstrap de roles,
   shared variables): sem isso o deploy da US-084 não pode ser executado. Runbook pronto em
   `docs/runbooks/deploy.md`.
@@ -107,6 +131,16 @@
 - **MinIO a partir da `quay.io`**: as imagens `minio/minio` e `minio/mc` saíram do Docker Hub.
 - **Portas locais**: storefront 3000, admin 3001, seller-center 3002, console 3003, api 3100, worker 3101.
 - `consistent-type-imports` desligado só no preset Node do ESLint (quebraria a DI do Nest).
+
+## Decisões do marco 1.1
+- **Argon2id nativo do Node** (`crypto.argon2`, ≥ 24.7) em `@mkt/platform`, sem dependência nova; `engines.node`
+  subiu para `>=24.7`.
+- **Papéis no role set inicial da Clerk**, não um role set por tipo de organização: o SDK não expõe `role_set_key`
+  e trocar o role set de organização com membros exige migração. O isolamento tenant × seller é garantido no
+  backend. O role set inicial ficou com 10 papéis — o **máximo** da Clerk; papel novo exigirá role sets por tipo.
+- **`PlatformModule` da API é global** (`ConfigService` alcançável por qualquer módulo, CLAUDE.md §4.13).
+- **Verificação sem turbo nesta máquina**: com o `pnpm dev` rodando (16 watchers + 4 Next), o turbo passa de 10 min;
+  e o `pnpm` global é a 11.x, que trava ao delegar para a 10.20. Rodar `npm run <script>` por pacote funciona.
 
 ## Instruções do humano
 _(escreva aqui ajustes para a próxima sessão, ex.: "priorize X", "não use a lib Y")_
