@@ -198,6 +198,26 @@ export interface WorkforceIdentityPort {
   ): Promise<{ type: string; data: Record<string, unknown> }>;
 }
 
+/** Endereço de um CEP (RF-IAM-09) — só o que o serviço sabe; número e complemento vêm do comprador. */
+export interface PostalCodeAddress {
+  /** Só dígitos. */
+  readonly zipCode: string;
+  readonly street: string;
+  readonly district: string;
+  readonly city: string;
+  /** UF, duas letras. */
+  readonly state: string;
+}
+
+/**
+ * Consulta de CEP (dono: `identity`, catálogo em `03-integracoes.md`). Não é
+ * por tenant: todo marketplace usa o mesmo serviço, escolhido pelo host.
+ */
+export interface PostalCodePort {
+  /** `undefined` quando o CEP não existe; lança quando o serviço está fora. */
+  lookup(zipCode: string): Promise<PostalCodeAddress | undefined>;
+}
+
 export interface CustomHostname {
   readonly hostname: string;
   readonly status: 'pending' | 'active' | 'failed';

@@ -20,6 +20,8 @@ import type {
   ShippingQuotePort,
   VerifiedPanelToken,
   WorkforceIdentityPort,
+  PostalCodeAddress,
+  PostalCodePort,
 } from '@mkt/contracts';
 import { Id, SystemClock } from '@mkt/shared-kernel';
 
@@ -325,3 +327,31 @@ export const fakeAdapterFactories: Readonly<Record<IntegrationCategory, () => un
   domain_provisioning: () => new FakeDomainProvisioning(),
 };
 export { MailpitEmail } from './mailpit-email.js';
+
+/**
+ * CEP fake: alguns CEPs conhecidos, o resto "não existe". Para testes e para
+ * rodar sem rede — em desenvolvimento o padrão é o ViaCEP, que não pede conta.
+ */
+export class FakePostalCode implements PostalCodePort {
+  static readonly KNOWN: Readonly<Record<string, PostalCodeAddress>> = {
+    '01001000': {
+      zipCode: '01001000',
+      street: 'Praça da Sé',
+      district: 'Sé',
+      city: 'São Paulo',
+      state: 'SP',
+    },
+    '20040002': {
+      zipCode: '20040002',
+      street: 'Rua da Assembleia',
+      district: 'Centro',
+      city: 'Rio de Janeiro',
+      state: 'RJ',
+    },
+    '78890000': { zipCode: '78890000', street: '', district: '', city: 'Sorriso', state: 'MT' },
+  };
+
+  async lookup(zipCode: string): Promise<PostalCodeAddress | undefined> {
+    return FakePostalCode.KNOWN[zipCode.replace(/\D/g, '')];
+  }
+}

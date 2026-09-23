@@ -26,6 +26,8 @@ export interface ApiEnv {
   readonly devSmtpUrl?: string;
   /** Chaves Ed25519 (PEM) do access token do comprador; ausentes fora de produção = par efêmero. */
   readonly customerTokenKeys?: { readonly privateKeyPem: string; readonly publicKeyPem: string };
+  /** Consulta de CEP: `viacep` (padrão) ou `fake` (testes, sem rede). */
+  readonly postalCodeProvider: 'viacep' | 'fake';
   /** Loja de cada tenant, para links de e-mail (`{slug}` é substituído). */
   readonly storefrontUrlTemplate: string;
   /** Credenciais da aplicação Clerk Console (staff). */
@@ -123,6 +125,8 @@ export function loadApiEnv(): ApiEnv {
       ? {}
       : { devSmtpUrl: process.env.SMTP_URL }),
     ...customerTokenKeysFromEnv(),
+    postalCodeProvider:
+      process.env.POSTAL_CODE_PROVIDER === 'fake' || process.env.NODE_ENV === 'test' ? 'fake' : 'viacep',
     storefrontUrlTemplate: process.env.STOREFRONT_URL_TEMPLATE ?? 'http://{slug}.localhost:3000',
     panelMfaEnforced: process.env.NODE_ENV === 'production' || process.env.PANEL_MFA_ENFORCED === 'true',
     // em desenvolvimento uma chave fixa basta; em produção vem do KMS (checklist §F)

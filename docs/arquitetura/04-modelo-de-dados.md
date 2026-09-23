@@ -66,7 +66,9 @@ O diagrama abaixo (USER, ROLE_ASSIGNMENT...) refere-se aos **compradores** (iden
 `document_number` só dígitos, `password_hash` Argon2id em formato PHC), `identity.customer_consents` (histórico:
 aceitar versão nova é linha nova; `ip inet`) e `identity.customer_email_verifications` (só o SHA-256 do token,
 validade de 24 h). Todas com RLS forçado; eventos no `identity.outbox`. Papéis de comprador não têm tabela: o
-storefront tem papel único (RF-IAM-07).
+storefront tem papel único (RF-IAM-07). Sessões (US-011): `identity.customer_refresh_tokens` (família, uso único, só SHA-256) e colunas
+`failed_login_attempts`/`locked_until` na conta; troca de senha (US-012): `identity.customer_password_resets`;
+endereços (US-014): `identity.customer_addresses` com um padrão por comprador (índice único parcial).
 ```mermaid
 erDiagram
   USER ||--o{ ROLE_ASSIGNMENT : tem

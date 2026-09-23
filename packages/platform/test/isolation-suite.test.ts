@@ -81,6 +81,24 @@ describe('probeCrossTenantAccess — a suíte precisa acusar de verdade', () => 
     expect(violacoes[0]?.reason).toContain('contém dado do tenant B');
   });
 
+  it('não acusa o `instance` do Problem Details: é a URL que o próprio tenant A pediu', async () => {
+    const violacoes = await probe([rota('DELETE', '/v1/store/customers/me/addresses/:id')], () => ({
+      status: 401,
+      body: { title: 'Entre na sua conta', instance: `/v1/store/customers/me/addresses/${WIDGET_DE_B}` },
+    }));
+
+    expect(violacoes).toEqual([]);
+  });
+
+  it('mas acusa o mesmo id em qualquer outro campo do erro', async () => {
+    const violacoes = await probe([rota('DELETE', '/v1/store/customers/me/addresses/:id')], () => ({
+      status: 404,
+      body: { title: 'Não encontrado', instance: '/x', detail: `endereço ${WIDGET_DE_B} é de outra loja` },
+    }));
+
+    expect(violacoes).toHaveLength(1);
+  });
+
   it('acusa escrita aceita sobre recurso de outro tenant', async () => {
     const violacoes = await probe([rota('DELETE', '/v1/store/widgets/:id')], () => ({
       status: 204,

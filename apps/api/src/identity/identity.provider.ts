@@ -1,8 +1,9 @@
 import { Logger } from '@nestjs/common';
 
-import { FakeWorkforceIdentity } from '@mkt/adapters-fakes';
+import { FakePostalCode, FakeWorkforceIdentity } from '@mkt/adapters-fakes';
 import { ClerkWorkforceIdentity } from '@mkt/adapters-identity-clerk';
-import type { WorkforceIdentityPort } from '@mkt/contracts';
+import { ViaCepPostalCode } from '@mkt/adapters-postal-code-viacep';
+import type { PostalCodePort, WorkforceIdentityPort } from '@mkt/contracts';
 import { generateEd25519KeyPair } from '@mkt/platform';
 
 import type { ApiEnv } from '../env.js';
@@ -74,15 +75,25 @@ function customerTokenKeys(env: ApiEnv): { privateKeyPem: string; publicKeyPem: 
   return ephemeralKeys;
 }
 
-/** Compradores (US-010/US-011): links dos e-mails, borda confiável para o IP e chaves do access token. */
+/**
+ * CEP (US-014): ViaCEP por padrão — público, sem conta. `POSTAL_CODE_PROVIDER=fake`
+ * (testes, ou desenvolvimento sem internet) usa uma tabela fixa de CEPs.
+ */
+function createPostalCode(env: ApiEnv): PostalCodePort {
+  return env.postalCodeProvider === 'fake' ? new FakePostalCode() : new ViaCepPostalCode();
+}
+
+/** Compradores (US-010 a US-014): links dos e-mails, borda confiável, chaves do access token e CEP. */
 export function customerOptions(env: ApiEnv): {
   storefrontUrlTemplate: string;
   edgeSharedSecret?: string;
   tokenKeys: { privateKeyPem: string; publicKeyPem: string };
+  postalCode: PostalCodePort;
 } {
   return {
     storefrontUrlTemplate: env.storefrontUrlTemplate,
     ...(env.edgeSharedSecret === undefined ? {} : { edgeSharedSecret: env.edgeSharedSecret }),
     tokenKeys: customerTokenKeys(env),
+    postalCode: createPostalCode(env),
   };
 }

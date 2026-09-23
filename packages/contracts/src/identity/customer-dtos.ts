@@ -82,3 +82,39 @@ export const completePasswordResetRequest = z.object({
 });
 
 export type CompletePasswordResetRequest = z.infer<typeof completePasswordResetRequest>;
+
+/** Endereço do comprador (US-014). As regras (CEP, UF, tamanhos) moram no domínio. */
+export const customerAddressRequest = z.object({
+  label: z.string().max(200).optional(),
+  recipientName: z.string().max(200),
+  zipCode: z.string().max(20),
+  street: z.string().max(300),
+  number: z.string().max(50),
+  complement: z.string().max(200).optional(),
+  district: z.string().max(200),
+  city: z.string().max(200),
+  state: z.string().max(10),
+  isDefault: z.boolean().optional(),
+});
+
+export type CustomerAddressRequest = z.infer<typeof customerAddressRequest>;
+
+export interface CustomerAddressResponse {
+  readonly id: string;
+  readonly label?: string;
+  readonly recipientName: string;
+  readonly zipCode: string;
+  readonly street: string;
+  readonly number: string;
+  readonly complement?: string;
+  readonly district: string;
+  readonly city: string;
+  readonly state: string;
+  readonly isDefault: boolean;
+}
+
+/** Autocompletar de CEP: `found: false` quando o CEP não existe. */
+export interface PostalCodeLookupResponse {
+  readonly found: boolean;
+  readonly address?: { zipCode: string; street: string; district: string; city: string; state: string };
+}

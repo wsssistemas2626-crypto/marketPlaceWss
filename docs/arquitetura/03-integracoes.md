@@ -42,7 +42,7 @@ Este é o documento que torna o marketplace "pronto para qualquer integração".
 | `ImageProcessorPort` | catalog | resize/convert | sharp local, imgproxy, Cloudinary |
 | `WorkforceIdentityPort` | identity | verifyToken, createOrganization, updateOrganizationMetadata, inviteMember, removeMember, listMemberships, parseWebhook | **Clerk** (ADR-013) |
 | `CompanyRegistryPort` | sellers | lookupCnpj | BrasilAPI, ReceitaWS, Serpro |
-| `PostalCodePort` | identity | lookup(cep) | ViaCEP, BrasilAPI |
+| `PostalCodePort` | identity | lookup(cep) | ViaCEP (`adapters/postal-code-viacep`, US-014), BrasilAPI; fake em `adapters-fakes` |
 | `ContentModerationPort` | messaging/catalog | check(text) | regex local, LLM |
 | `ContentAssistPort` | catalog | suggestCategory, improveListing | Claude API |
 | `DomainProvisioningPort` | tenancy | addDomain, verify, getCertificateStatus, remove | **Cloudflare for SaaS** (escolhido, ADR-014); alternativas: Vercel Domains, Caddy on-demand TLS |

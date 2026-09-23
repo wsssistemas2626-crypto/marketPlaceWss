@@ -420,4 +420,136 @@ describe.skipIf(!dockerAvailable)('cadastro de comprador (e2e)', () => {
       expect((await trocar('loja-a.localhost', token, 'outraSenha2026')).status).toBe(422);
     });
   });
+
+  describe('endereços (US-014)', () => {
+    const http = async () => (await import('supertest')).default(application.getHttpServer());
+
+    const sessao = async (host: string, email: string, password: string): Promise<string> => {
+      const login = await (
+        await http()
+      )
+        .post('/v1/store/auth/login')
+        .set('host', host)
+        .send({ email, password });
+      expect(login.status).toBe(200);
+      return login.body.accessToken as string;
+    };
+
+    const endereco = {
+      recipientName: 'Ana Silva',
+      zipCode: '01001-000',
+      street: 'Praça da Sé',
+      number: '100',
+      district: 'Sé',
+      city: 'São Paulo',
+      state: 'SP',
+    };
+
+    let tokenAna = '';
+    let enderecoDaAna = '';
+
+    it('sem sessão, endereços são 401', async () => {
+      const resposta = await (
+        await http()
+      )
+        .get('/v1/store/customers/me/addresses')
+        .set('host', 'loja-a.localhost');
+
+      expect(resposta.status).toBe(401);
+    });
+
+    it('comprador cadastra, lista e o primeiro vira o padrão', async () => {
+      tokenAna = await sessao('loja-a.localhost', 'ana@exemplo.com', cliente.password);
+
+      const criado = await (
+        await http()
+      )
+        .post('/v1/store/customers/me/addresses')
+        .set('host', 'loja-a.localhost')
+        .set('authorization', `Bearer ${tokenAna}`)
+        .set('idempotency-key', 'endereco-ana-1')
+        .send(endereco);
+
+      expect(criado.status).toBe(201);
+      expect(criado.body).toMatchObject({ zipCode: '01001000', isDefault: true });
+      enderecoDaAna = criado.body.id as string;
+
+      const lista = await (
+        await http()
+      )
+        .get('/v1/store/customers/me/addresses')
+        .set('host', 'loja-a.localhost')
+        .set('authorization', `Bearer ${tokenAna}`);
+      expect(lista.body.data).toHaveLength(1);
+    });
+
+    it('anti-IDOR: outro comprador da mesma loja não edita nem apaga o endereço', async () => {
+      await cadastrar('loja-a.localhost', { ...cliente, email: 'bia@exemplo.com' });
+      const tokenBia = await sessao('loja-a.localhost', 'bia@exemplo.com', cliente.password);
+
+      const edicao = await (
+        await http()
+      )
+        .put(`/v1/store/customers/me/addresses/${enderecoDaAna}`)
+        .set('host', 'loja-a.localhost')
+        .set('authorization', `Bearer ${tokenBia}`)
+        .send({ ...endereco, recipientName: 'Invasora' });
+      const exclusao = await (
+        await http()
+      )
+        .delete(`/v1/store/customers/me/addresses/${enderecoDaAna}`)
+        .set('host', 'loja-a.localhost')
+        .set('authorization', `Bearer ${tokenBia}`);
+
+      expect(edicao.status).toBe(404);
+      expect(exclusao.status).toBe(404);
+      const [linha] = await naLoja<{ recipient_name: string }>(
+        lojaA,
+        'SELECT recipient_name FROM identity.customer_addresses WHERE id = $1',
+        [enderecoDaAna],
+      );
+      expect(linha?.recipient_name).toBe('Ana Silva');
+    });
+
+    it('cross-tenant: o endereço da loja A não aparece para quem está na loja B', async () => {
+      const tokenB = await sessao('loja-b.localhost', 'ana@exemplo.com', cliente.password).catch(() => '');
+      // a conta da B ainda está pendente, mas entra; se não entrar, o próprio 401 já prova o isolamento
+      const lista = await (
+        await http()
+      )
+        .get('/v1/store/customers/me/addresses')
+        .set('host', 'loja-b.localhost')
+        .set('authorization', `Bearer ${tokenB}`);
+
+      expect(JSON.stringify(lista.body)).not.toContain(enderecoDaAna);
+      expect(await naLoja(lojaB, 'SELECT id FROM identity.customer_addresses')).toHaveLength(0);
+    });
+
+    it('CEP autocompleta para comprador logado (serviço fake nos testes)', async () => {
+      const cep = await (
+        await http()
+      )
+        .get('/v1/store/postal-codes?zipCode=01001-000')
+        .set('host', 'loja-a.localhost')
+        .set('authorization', `Bearer ${tokenAna}`);
+      const inexistente = await (
+        await http()
+      )
+        .get('/v1/store/postal-codes?zipCode=99999999')
+        .set('host', 'loja-a.localhost')
+        .set('authorization', `Bearer ${tokenAna}`);
+
+      expect(cep.body).toEqual({
+        found: true,
+        address: {
+          zipCode: '01001000',
+          street: 'Praça da Sé',
+          district: 'Sé',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+      });
+      expect(inexistente.body).toEqual({ found: false });
+    });
+  });
 });

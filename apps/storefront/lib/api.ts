@@ -109,3 +109,40 @@ export async function fetchDoComprador<T>(path: string, accessToken: string): Pr
     return undefined;
   }
 }
+
+/**
+ * Chamada autenticada do comprador (qualquer método), para server actions.
+ * O token vem do cookie `HttpOnly` — quem chama não o manipula.
+ */
+export async function chamarComoComprador<T>(
+  accessToken: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  path: string,
+  body?: unknown,
+  options: { idempotent?: boolean } = {},
+): Promise<ActionResult<T>> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      method,
+      headers: {
+        ...(await tenantHeaders()),
+        authorization: `Bearer ${accessToken}`,
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(options.idempotent === true ? { 'idempotency-key': crypto.randomUUID() } : {}),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      cache: 'no-store',
+    });
+
+    if (response.status === 204) return {};
+    if (response.ok) return { data: (await response.json()) as T };
+
+    const problem = (await response.json().catch(() => ({}))) as { title?: string; field?: string };
+    return {
+      error: problem.title ?? 'Não foi possível concluir agora. Tente de novo.',
+      ...(problem.field === undefined ? {} : { field: problem.field }),
+    };
+  } catch {
+    return { error: 'Estamos com instabilidade. Tente de novo em instantes.' };
+  }
+}

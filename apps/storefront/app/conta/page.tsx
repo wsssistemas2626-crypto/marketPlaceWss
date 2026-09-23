@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { fetchDoComprador } from '../../lib/api';
@@ -32,6 +33,9 @@ export default async function ContaPage() {
       {perfil.emailVerified ? null : (
         <p style={sucesso}>Confirme seu e-mail pelo link que enviamos para poder comprar.</p>
       )}
+      <p>
+        <Link href="/conta/enderecos">Meus endereços</Link>
+      </p>
       <form action={sair}>
         <button type="submit" style={botao}>
           Sair

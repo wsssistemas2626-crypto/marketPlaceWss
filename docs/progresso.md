@@ -5,10 +5,10 @@
 
 ## Estado atual
 - **Fase:** 1 — MVP transacional
-- **Marco atual:** 1.1 — Identidade (em andamento)
+- **Marco atual:** 1.1 — Identidade (concluído — aguardando revisão do PR)
 - **Branch de trabalho:** `fase-1/m11-identidade` (empilhada sobre `fase-1/m10-tenancy-de-produto`: os PRs #1–#6
   ainda não entraram na `main`)
-- **Próxima story:** US-014 (endereços do comprador) — última do marco 1.1
+- **Próxima story:** marco 1.2 — Sellers (US-015 → US-019; US-016 com gateway fake)
 - **Última atualização:** 2026-09-23
 
 ## Checkpoints da Fase 0
@@ -20,7 +20,7 @@
 | C4 — Console, isolamento e CI | US-075, US-074, US-008 | ✅ CI verde | PR #4 |
 | C5 — Railway (staging + PR) | US-084 | 🚧 código pronto, falta a conta | `fase-0/c5-railway` (PR #5) |
 
-## Fase 1 — marco 1.1 (em andamento)
+## Fase 1 — marco 1.1 (concluído)
 Ordem: US-013 → US-083 → US-010 → **US-011** → US-012 → US-014. A US-011 não estava na lista do marco no plano,
 mas a US-012 (derrubar sessões) e a US-014 (comprador logado) dependem dela — incluída.
 - **US-013** — catálogo de papéis/permissões em `@mkt/contracts`; `pnpm clerk:roles` sincroniza com a Clerk pela
@@ -41,6 +41,9 @@ mas a US-012 (derrubar sessões) e a US-014 (comprador logado) dependem dela —
 - **US-012** — recuperação de senha: 202 genérico (e-mail fora do caminho da resposta), token de uso único de 1 h,
   link novo invalida o anterior, troca revoga todas as sessões e avisa o dono. Telas `/conta/recuperar-senha` e
   `/conta/redefinir-senha`.
+- **US-014** — endereços do comprador (`/customers/me/addresses`, dono pela sessão, 404 para id de outro comprador,
+  um padrão por comprador) e autocompletar de CEP (`GET /store/postal-codes`, só logado). Adapter novo
+  `postal-code-viacep` + `FakePostalCode`; `POSTAL_CODE_PROVIDER` escolhe (padrão ViaCEP, sem conta).
 
 ## Fase 1 — marco 1.0 (concluído — PR #6)
 - **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação

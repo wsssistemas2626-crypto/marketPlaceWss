@@ -1,4 +1,4 @@
-import { inet, integer, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, inet, integer, pgSchema, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 export const identitySchema = pgSchema('identity');
 
@@ -80,4 +80,23 @@ export const customerPasswordResets = identitySchema.table('customer_password_re
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   usedAt: timestamp('used_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Espelha `drizzle/0005_customer_addresses.sql` — colunas `pii` nunca vão para log. */
+export const customerAddresses = identitySchema.table('customer_addresses', {
+  id: uuid('id').primaryKey(),
+  tenantId: uuid('tenant_id').notNull(),
+  customerId: uuid('customer_id').notNull(),
+  label: text('label'),
+  recipientName: text('recipient_name').notNull(),
+  zipCode: text('zip_code').notNull(),
+  street: text('street').notNull(),
+  number: text('number').notNull(),
+  complement: text('complement'),
+  district: text('district').notNull(),
+  city: text('city').notNull(),
+  state: text('state').notNull(),
+  isDefault: boolean('is_default').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

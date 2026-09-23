@@ -19,6 +19,7 @@
   "dependencies": {
     "@mkt/adapters-fakes": "workspace:*",
     "@mkt/adapters-identity-clerk": "workspace:*",
+    "@mkt/adapters-postal-code-viacep": "workspace:*",
     "@mkt/contracts": "workspace:*",
     "@mkt/modules-identity": "workspace:*",
     "@mkt/modules-integrations": "workspace:*",

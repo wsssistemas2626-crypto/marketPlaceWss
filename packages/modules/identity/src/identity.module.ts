@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
-import type { WorkforceIdentityPort } from '@mkt/contracts';
+import type { PostalCodePort, WorkforceIdentityPort } from '@mkt/contracts';
 import { Argon2idPasswordHasher } from '@mkt/platform';
 import { SystemClock } from '@mkt/shared-kernel';
 
@@ -32,6 +32,12 @@ import {
   type PasswordBreachPort,
   type StorefrontLinksPort,
 } from './application/customers/ports.js';
+import {
+  CUSTOMER_ADDRESS_REPOSITORY,
+  CustomerAddresses,
+  POSTAL_CODE,
+  type CustomerAddressRepositoryPort,
+} from './application/customers/customer-addresses.js';
 import { CustomerSessions } from './application/customers/customer-sessions.js';
 import {
   PASSWORD_RESET_MAILER,
@@ -52,6 +58,7 @@ import {
 } from './application/customers/session-ports.js';
 import { VerifyCustomerEmail } from './application/customers/verify-customer-email.js';
 import { SyncClerkWebhook } from './application/sync-clerk-webhook.js';
+import { CustomerAddressesController, PostalCodesController } from './http/customer-addresses.controller.js';
 import { CustomerAuthGuard } from './http/customer-auth.js';
 import {
   CustomerAccountController,
@@ -72,6 +79,7 @@ import {
   STOREFRONT_LINKS_OPTIONS,
   TemplateStorefrontLinks,
 } from './infrastructure/customer-adapters.js';
+import { DrizzleCustomerAddressRepository } from './infrastructure/drizzle-customer-address.repository.js';
 import { DrizzleCustomerRepository } from './infrastructure/drizzle-customer.repository.js';
 import { DrizzleOrgLinkRepository } from './infrastructure/drizzle-org-link.repository.js';
 import { DrizzlePasswordResetRepository } from './infrastructure/drizzle-password-reset.repository.js';
@@ -95,10 +103,12 @@ export interface IdentityModuleOptions {
     readonly edgeSharedSecret?: string;
     /** Chaves Ed25519 do access token do comprador (US-011). */
     readonly tokenKeys: CustomerTokenKeys;
+    /** Consulta de CEP (US-014): ViaCEP ou fake, escolhido pelo host — não é por tenant. */
+    readonly postalCode: PostalCodePort;
   };
 }
 
-/** Compradores: cadastro e confirmação (US-010), sessões (US-011), troca de senha (US-012). */
+/** Compradores: cadastro (US-010), sessões (US-011), troca de senha (US-012) e endereços (US-014). */
 function customerProviders(options: NonNullable<IdentityModuleOptions['customers']>): Provider[] {
   return [
     DrizzleCustomerRepository,
@@ -110,6 +120,14 @@ function customerProviders(options: NonNullable<IdentityModuleOptions['customers
       useFactory: () => new JwtCustomerAccessTokens(options.tokenKeys, new SystemClock()),
     },
     { provide: APP_GUARD, useClass: CustomerAuthGuard },
+    { provide: CUSTOMER_ADDRESS_REPOSITORY, useClass: DrizzleCustomerAddressRepository },
+    { provide: POSTAL_CODE, useValue: options.postalCode },
+    {
+      provide: CustomerAddresses,
+      useFactory: (addresses: CustomerAddressRepositoryPort, postalCodes: PostalCodePort) =>
+        new CustomerAddresses(addresses, postalCodes, new SystemClock()),
+      inject: [CUSTOMER_ADDRESS_REPOSITORY, POSTAL_CODE],
+    },
     HubCustomerMailer,
     { provide: CUSTOMER_MAILER, useExisting: HubCustomerMailer },
     { provide: PASSWORD_RESET_MAILER, useExisting: HubCustomerMailer },
@@ -243,6 +261,8 @@ export class IdentityModule implements NestModule {
               CustomerSessionsController,
               CustomerAccountController,
               PasswordResetController,
+              CustomerAddressesController,
+              PostalCodesController,
             ]),
       ],
       providers: [
