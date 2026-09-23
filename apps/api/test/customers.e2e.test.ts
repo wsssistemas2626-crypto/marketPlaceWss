@@ -238,4 +238,106 @@ describe.skipIf(!dockerAvailable)('cadastro de comprador (e2e)', () => {
     const contasB = await naLoja<{ status: string }>(lojaB, 'SELECT status FROM identity.customers');
     expect(contasB[0]?.status).toBe('pending_verification');
   });
+
+  describe('sessões (US-011)', () => {
+    const http = async () => (await import('supertest')).default(application.getHttpServer());
+
+    const entrar = async (host: string, email: string, password: string) =>
+      (await http()).post('/v1/store/auth/login').set('host', host).send({ email, password });
+
+    const minhaConta = async (host: string, accessToken: string) =>
+      (await http())
+        .get('/v1/store/customers/me')
+        .set('host', host)
+        .set('authorization', `Bearer ${accessToken}`);
+
+    const renovar = async (host: string, refreshToken: string) =>
+      (await http()).post('/v1/store/auth/refresh').set('host', host).send({ refreshToken });
+
+    it('login devolve access e refresh; o access abre a própria conta', async () => {
+      const login = await entrar('loja-a.localhost', 'ana@exemplo.com', cliente.password);
+
+      expect(login.status).toBe(200);
+      expect(login.body).toMatchObject({ accessToken: expect.any(String), refreshToken: expect.any(String) });
+
+      const conta = await minhaConta('loja-a.localhost', login.body.accessToken);
+      expect(conta.status).toBe(200);
+      expect(conta.body).toMatchObject({ email: 'ana@exemplo.com', status: 'active', emailVerified: true });
+    });
+
+    it('sem token, "minha conta" é 401', async () => {
+      const resposta = await (await http()).get('/v1/store/customers/me').set('host', 'loja-a.localhost');
+
+      expect(resposta.status).toBe(401);
+    });
+
+    it('cross-tenant: token do comprador da loja A é recusado na loja B', async () => {
+      const login = await entrar('loja-a.localhost', 'ana@exemplo.com', cliente.password);
+
+      const naOutraLoja = await minhaConta('loja-b.localhost', login.body.accessToken);
+
+      expect(naOutraLoja.status).toBe(401);
+    });
+
+    it('senha errada e e-mail inexistente respondem igual (401 sem dizer qual)', async () => {
+      const senhaErrada = await entrar('loja-a.localhost', 'ana@exemplo.com', 'errada2026!');
+      const semConta = await entrar('loja-a.localhost', 'ninguem@exemplo.com', cliente.password);
+
+      expect(senhaErrada.status).toBe(401);
+      expect(semConta.status).toBe(401);
+      expect(senhaErrada.body.title).toBe(semConta.body.title);
+    });
+
+    it('refresh rotativo: reusar o antigo derruba a família inteira', async () => {
+      const login = await entrar('loja-a.localhost', 'ana@exemplo.com', cliente.password);
+      const renovado = await renovar('loja-a.localhost', login.body.refreshToken);
+      expect(renovado.status).toBe(200);
+
+      const reuso = await renovar('loja-a.localhost', login.body.refreshToken);
+      expect(reuso.status).toBe(401);
+
+      const legitimo = await renovar('loja-a.localhost', renovado.body.refreshToken);
+      expect(legitimo.status).toBe(401);
+    });
+
+    it('cross-tenant: refresh da loja A não renova na loja B', async () => {
+      const login = await entrar('loja-a.localhost', 'ana@exemplo.com', cliente.password);
+
+      expect((await renovar('loja-b.localhost', login.body.refreshToken)).status).toBe(401);
+      // e continua valendo na loja certa
+      expect((await renovar('loja-a.localhost', login.body.refreshToken)).status).toBe(200);
+    });
+
+    it('logout encerra a sessão', async () => {
+      const login = await entrar('loja-a.localhost', 'ana@exemplo.com', cliente.password);
+
+      const saida = await (
+        await http()
+      )
+        .post('/v1/store/auth/logout')
+        .set('host', 'loja-a.localhost')
+        .send({ refreshToken: login.body.refreshToken });
+
+      expect(saida.status).toBe(204);
+      expect((await renovar('loja-a.localhost', login.body.refreshToken)).status).toBe(401);
+    });
+
+    it('bloqueio progressivo: depois de 5 senhas erradas, nem a certa entra', async () => {
+      // conta própria para o teste não travar as outras
+      await cadastrar('loja-a.localhost', { ...cliente, email: 'bloqueio@exemplo.com' });
+      for (let tentativa = 0; tentativa < 5; tentativa += 1) {
+        await entrar('loja-a.localhost', 'bloqueio@exemplo.com', 'errada2026!');
+      }
+
+      const comSenhaCerta = await entrar('loja-a.localhost', 'bloqueio@exemplo.com', cliente.password);
+
+      expect(comSenhaCerta.status).toBe(401);
+      const [conta] = await naLoja<{ failed_login_attempts: number; locked_until: Date | null }>(
+        lojaA,
+        "SELECT failed_login_attempts, locked_until FROM identity.customers WHERE email = 'bloqueio@exemplo.com'",
+      );
+      expect(conta?.failed_login_attempts).toBe(5);
+      expect(conta?.locked_until).not.toBeNull();
+    });
+  });
 });

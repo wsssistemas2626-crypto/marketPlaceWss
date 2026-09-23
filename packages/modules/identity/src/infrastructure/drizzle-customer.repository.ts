@@ -6,12 +6,14 @@ import { DATABASE_POOL, enqueueOutboxEvent, TenantAwareRepository, type Database
 import { type DomainEvent, Id, SystemClock } from '@mkt/shared-kernel';
 
 import type { CustomerRepositoryPort, EmailVerification } from '../application/customers/ports.js';
+import type { CustomerCredentialsPort, LoginRecord } from '../application/customers/session-ports.js';
 import {
   Customer,
   type ConsentKind,
   type CustomerSnapshot,
   type CustomerStatus,
 } from '../domain/customer/customer.js';
+import type { LoginThrottleState } from '../domain/customer/login-throttle.js';
 import { customerConsents, customerEmailVerifications, customers } from './identity.schema.js';
 
 /** Violação de unicidade do Postgres, venha ela crua ou embrulhada pelo Drizzle. */
@@ -28,7 +30,10 @@ type CustomerRow = typeof customers.$inferSelect;
  * "já existe".
  */
 @Injectable()
-export class DrizzleCustomerRepository extends TenantAwareRepository implements CustomerRepositoryPort {
+export class DrizzleCustomerRepository
+  extends TenantAwareRepository
+  implements CustomerRepositoryPort, CustomerCredentialsPort
+{
   private readonly clock = new SystemClock();
 
   constructor(@Inject(DATABASE_POOL) pool: DatabasePool) {
@@ -159,6 +164,39 @@ export class DrizzleCustomerRepository extends TenantAwareRepository implements 
         .where(eq(customers.id, snapshot.id));
 
       await enqueueOutboxEvent(client, 'identity', event);
+    });
+  }
+
+  async findLoginRecord(email: string): Promise<LoginRecord | undefined> {
+    return this.withTenant(async (client) => {
+      const [row] = await drizzle(client).select().from(customers).where(eq(customers.email, email)).limit(1);
+      if (row === undefined) return undefined;
+
+      return {
+        customer: this.toCustomer(row),
+        throttle: {
+          failedAttempts: row.failedLoginAttempts,
+          ...(row.lockedUntil === null ? {} : { lockedUntil: row.lockedUntil }),
+        },
+      };
+    });
+  }
+
+  async saveThrottle(customerId: string, state: LoginThrottleState): Promise<void> {
+    await this.withTenant(async (client) => {
+      await drizzle(client)
+        .update(customers)
+        .set({ failedLoginAttempts: state.failedAttempts, lockedUntil: state.lockedUntil ?? null })
+        .where(eq(customers.id, customerId));
+    });
+  }
+
+  async updatePasswordHash(customerId: string, passwordHash: string): Promise<void> {
+    await this.withTenant(async (client) => {
+      await drizzle(client)
+        .update(customers)
+        .set({ passwordHash, updatedAt: this.clock.now() })
+        .where(eq(customers.id, customerId));
     });
   }
 

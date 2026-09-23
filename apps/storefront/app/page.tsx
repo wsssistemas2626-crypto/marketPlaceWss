@@ -46,7 +46,8 @@ export default async function Home() {
       <h1 style={{ fontWeight: 'var(--mkt-heading-weight, 700)' as never }}>Loja {tenant.slug}</h1>
       <p>Vitrine do comprador. O catálogo chega nos próximos marcos da Fase 1.</p>
       <p>
-        <Link href="/conta/cadastro">Criar conta</Link>
+        <Link href="/conta/cadastro">Criar conta</Link> · <Link href="/conta/entrar">Entrar</Link> ·{' '}
+        <Link href="/conta">Minha conta</Link>
       </p>
       <button
         type="button"

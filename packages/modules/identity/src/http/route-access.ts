@@ -2,6 +2,7 @@ import type { OrganizationKind } from '@mkt/contracts';
 import { audienceOf, PUBLIC_ROUTE } from '@mkt/platform';
 
 import { CONSOLE_AUTH } from './console-auth.js';
+import { CUSTOMER_AUTH } from './customer-auth.js';
 import { PANEL_AUTH, REQUIRES_PERMISSION } from './panel-auth.guard.js';
 
 /** O que uma rota declara sobre quem pode chamá-la (RNF-SEG-03). */
@@ -11,9 +12,6 @@ export type RouteAccess =
   | { readonly policy: 'customer' }
   | { readonly policy: 'public'; readonly reason: string }
   | { readonly policy: 'none' };
-
-/** Metadado de rota do comprador — o decorator `@CustomerAuth` é registrado pelo storefront (US-011). */
-export const CUSTOMER_AUTH = 'mkt:customer-auth';
 
 /** Controller (classe) ou handler (método) — onde o Nest grava os metadados. */
 type Target = object;

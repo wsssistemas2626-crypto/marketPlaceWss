@@ -7,11 +7,10 @@ import {
   type VerifyCustomerEmailResponse,
 } from '@mkt/contracts';
 import { Idempotent, Public, RateLimit, resolveClientIp, type HostCarrier } from '@mkt/platform';
-import { ValidationError } from '@mkt/shared-kernel';
-import type { z } from 'zod';
 
 import { RegisterCustomer } from '../application/customers/register-customer.js';
 import { VerifyCustomerEmail } from '../application/customers/verify-customer-email.js';
+import { parseBody } from './parse-body.js';
 
 /** Configuração da borda para ler o IP do comprador (mesma do TenantContext). */
 export interface CustomerHttpOptions {
@@ -21,14 +20,6 @@ export interface CustomerHttpOptions {
 export const CUSTOMER_HTTP_OPTIONS = Symbol('CUSTOMER_HTTP_OPTIONS');
 
 type ClientRequest = HostCarrier & { readonly ip?: string; readonly socket?: { remoteAddress?: string } };
-
-function parse<T extends z.ZodType>(schema: T, body: unknown): z.infer<T> {
-  const parsed = schema.safeParse(body);
-  if (parsed.success) return parsed.data;
-
-  const issue = parsed.error.issues[0];
-  throw new ValidationError(issue?.message ?? 'Corpo inválido', { field: issue?.path.join('.') || 'body' });
-}
 
 const GENERIC_REGISTRATION_MESSAGE =
   'Se os dados estiverem corretos, você vai receber um e-mail para confirmar a conta.';
@@ -55,7 +46,7 @@ export class CustomersController {
   @Idempotent()
   @RateLimit({ limit: 10, windowMs: 60_000 })
   async create(@Body() body: unknown, @Req() request: ClientRequest): Promise<RegisterCustomerResponse> {
-    const input = parse(registerCustomerRequest, body);
+    const input = parseBody(registerCustomerRequest, body);
 
     await this.register.execute({ ...input, ip: resolveClientIp(request, this.options) });
 
@@ -66,7 +57,7 @@ export class CustomersController {
   @HttpCode(200)
   @RateLimit({ limit: 20, windowMs: 60_000 })
   async verify(@Body() body: unknown): Promise<VerifyCustomerEmailResponse> {
-    const { token } = parse(verifyCustomerEmailRequest, body);
+    const { token } = parseBody(verifyCustomerEmailRequest, body);
     return this.verifyEmail.execute(token);
   }
 }

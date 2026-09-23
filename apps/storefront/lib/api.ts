@@ -96,3 +96,16 @@ export async function postToApi<T>(
     return { error: 'Estamos com instabilidade. Tente de novo em instantes.' };
   }
 }
+
+/** GET em rota `@CustomerAuth` com o access token do cookie. `undefined` = sem sessão válida. */
+export async function fetchDoComprador<T>(path: string, accessToken: string): Promise<T | undefined> {
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      headers: { ...(await tenantHeaders()), authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    return response.ok ? ((await response.json()) as T) : undefined;
+  } catch {
+    return undefined;
+  }
+}

@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 
 import { IntegrationHub } from '@mkt/modules-integrations';
-import { ConfigService, requireTenant } from '@mkt/platform';
+import { ConfigService, Ed25519JwtSigner, Ed25519JwtVerifier, requireTenant } from '@mkt/platform';
+import type { Clock } from '@mkt/shared-kernel';
 
 import type {
   CustomerMailerPort,
@@ -9,6 +10,7 @@ import type {
   PasswordBreachPort,
   StorefrontLinksPort,
 } from '../application/customers/ports.js';
+import type { CustomerAccessTokenPort } from '../application/customers/session-ports.js';
 
 /** Onde fica a loja de cada tenant — decidido pelo host (composition root). */
 export interface StorefrontLinksOptions {
@@ -42,6 +44,7 @@ export class TemplateStorefrontLinks implements StorefrontLinksPort {
   resetPassword(): string {
     return `${this.base()}/conta/recuperar-senha`;
   }
+
 }
 
 /**
@@ -103,6 +106,7 @@ export class HubCustomerMailer implements CustomerMailerPort {
       },
     });
   }
+
 }
 
 /** Padrões usados enquanto a plataforma não publicar outra versão. */
@@ -136,5 +140,46 @@ export class ConfigLegalVersions implements LegalVersionsPort {
 export class NoPasswordBreachCheck implements PasswordBreachPort {
   async isBreached(): Promise<boolean> {
     return false;
+  }
+}
+
+/** RF-IAM-03: access token de 15 minutos. */
+export const CUSTOMER_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+
+const CUSTOMER_TOKEN = { issuer: 'mkt-identity', audience: 'storefront' } as const;
+const CUSTOMER_TOKEN_CLAIMS = { iss: CUSTOMER_TOKEN.issuer, aud: CUSTOMER_TOKEN.audience } as const;
+
+/** Chaves Ed25519 (PEM) do access token do comprador. */
+export interface CustomerTokenKeys {
+  readonly privateKeyPem: string;
+  readonly publicKeyPem: string;
+}
+
+/**
+ * Access token do comprador: JWT Ed25519 com `sub` (comprador) e `tid`
+ * (tenant). A verificação confere assinatura, emissor, audiência e validade;
+ * quem compara o `tid` com o tenant do host é o guard (`CustomerAuthGuard`).
+ */
+export class JwtCustomerAccessTokens implements CustomerAccessTokenPort {
+  private readonly signer: Ed25519JwtSigner;
+  private readonly verifier: Ed25519JwtVerifier;
+
+  constructor(keys: CustomerTokenKeys, clock: Clock) {
+    this.signer = new Ed25519JwtSigner(keys.privateKeyPem, clock);
+    this.verifier = new Ed25519JwtVerifier(keys.publicKeyPem, CUSTOMER_TOKEN, clock);
+  }
+
+  issue(input: { customerId: string; tenantId: string }): { token: string; expiresAt: Date } {
+    return this.signer.sign(
+      { sub: input.customerId, tid: input.tenantId, typ: 'customer', ...CUSTOMER_TOKEN_CLAIMS },
+      CUSTOMER_ACCESS_TOKEN_TTL_SECONDS,
+    );
+  }
+
+  verify(token: string): { customerId: string; tenantId: string } {
+    const claims = this.verifier.verify(token);
+    if (claims.typ !== 'customer' || typeof claims.tid !== 'string')
+      throw new Error('Token não é de comprador');
+    return { customerId: claims.sub, tenantId: claims.tid };
   }
 }

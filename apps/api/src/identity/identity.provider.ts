@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { FakeWorkforceIdentity } from '@mkt/adapters-fakes';
 import { ClerkWorkforceIdentity } from '@mkt/adapters-identity-clerk';
 import type { WorkforceIdentityPort } from '@mkt/contracts';
+import { generateEd25519KeyPair } from '@mkt/platform';
 
 import type { ApiEnv } from '../env.js';
 
@@ -54,10 +55,34 @@ export function createConsoleIdentity(env: ApiEnv): WorkforceIdentityPort {
   });
 }
 
-/** Compradores (US-010): links da loja nos e-mails e borda confiável para o IP. */
-export function customerOptions(env: ApiEnv): { storefrontUrlTemplate: string; edgeSharedSecret?: string } {
+let ephemeralKeys: { privateKeyPem: string; publicKeyPem: string } | undefined;
+
+/**
+ * Sem chaves no ambiente (desenvolvimento, testes), um par Ed25519 efêmero:
+ * funciona, mas os tokens morrem a cada reinício da API. Produção exige as
+ * chaves (`env.ts` recusa subir sem elas).
+ */
+function customerTokenKeys(env: ApiEnv): { privateKeyPem: string; publicKeyPem: string } {
+  if (env.customerTokenKeys !== undefined) return env.customerTokenKeys;
+
+  if (ephemeralKeys === undefined) {
+    new Logger('CustomerTokens').warn(
+      'CUSTOMER_JWT_*_KEY ausentes: chaves efêmeras (sessões de comprador caem a cada reinício)',
+    );
+    ephemeralKeys = generateEd25519KeyPair();
+  }
+  return ephemeralKeys;
+}
+
+/** Compradores (US-010/US-011): links dos e-mails, borda confiável para o IP e chaves do access token. */
+export function customerOptions(env: ApiEnv): {
+  storefrontUrlTemplate: string;
+  edgeSharedSecret?: string;
+  tokenKeys: { privateKeyPem: string; publicKeyPem: string };
+} {
   return {
     storefrontUrlTemplate: env.storefrontUrlTemplate,
     ...(env.edgeSharedSecret === undefined ? {} : { edgeSharedSecret: env.edgeSharedSecret }),
+    tokenKeys: customerTokenKeys(env),
   };
 }

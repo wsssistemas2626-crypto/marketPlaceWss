@@ -24,6 +24,8 @@ export interface ApiEnv {
   readonly panelMfaEnforced: boolean;
   /** Mailpit local: com ele, o e-mail "fake" é entregue de verdade (só fora de produção). */
   readonly devSmtpUrl?: string;
+  /** Chaves Ed25519 (PEM) do access token do comprador; ausentes fora de produção = par efêmero. */
+  readonly customerTokenKeys?: { readonly privateKeyPem: string; readonly publicKeyPem: string };
   /** Loja de cada tenant, para links de e-mail (`{slug}` é substituído). */
   readonly storefrontUrlTemplate: string;
   /** Credenciais da aplicação Clerk Console (staff). */
@@ -66,6 +68,24 @@ function clerkFromEnv(prefix: '' | 'CONSOLE_' = ''): ApiEnv['clerk'] {
   };
 }
 
+/** PEM em variável de ambiente costuma vir com `\n` literal no lugar da quebra de linha. */
+const pem = (value: string | undefined): string | undefined =>
+  value === undefined || value.trim() === '' ? undefined : value.replace(/\\n/g, '\n');
+
+function customerTokenKeysFromEnv(): Pick<ApiEnv, 'customerTokenKeys'> {
+  const privateKeyPem = pem(process.env.CUSTOMER_JWT_PRIVATE_KEY);
+  const publicKeyPem = pem(process.env.CUSTOMER_JWT_PUBLIC_KEY);
+
+  if (privateKeyPem === undefined || publicKeyPem === undefined) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('CUSTOMER_JWT_PRIVATE_KEY e CUSTOMER_JWT_PUBLIC_KEY são obrigatórias em produção');
+    }
+    return {};
+  }
+
+  return { customerTokenKeys: { privateKeyPem, publicKeyPem } };
+}
+
 function required(name: string): string {
   const value = process.env[name];
   if (value === undefined || value.trim() === '') {
@@ -102,6 +122,7 @@ export function loadApiEnv(): ApiEnv {
     ...(process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test' || !process.env.SMTP_URL
       ? {}
       : { devSmtpUrl: process.env.SMTP_URL }),
+    ...customerTokenKeysFromEnv(),
     storefrontUrlTemplate: process.env.STOREFRONT_URL_TEMPLATE ?? 'http://{slug}.localhost:3000',
     panelMfaEnforced: process.env.NODE_ENV === 'production' || process.env.PANEL_MFA_ENFORCED === 'true',
     // em desenvolvimento uma chave fixa basta; em produção vem do KMS (checklist §F)

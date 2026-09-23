@@ -33,7 +33,6 @@ export {
   type PanelAuthPolicy,
 } from './http/panel-auth.guard.js';
 export {
-  CUSTOMER_AUTH,
   describeRouteAccess,
   findRouteAccessViolations,
   type RouteAccess,
@@ -50,3 +49,23 @@ export {
 } from './application/customers/ports.js';
 export { RegisterCustomer, type RegisterCustomerCommand } from './application/customers/register-customer.js';
 export { VerifyCustomerEmail } from './application/customers/verify-customer-email.js';
+export {
+  CurrentCustomer,
+  CUSTOMER_AUTH,
+  CustomerAuth,
+  CustomerAuthGuard,
+  CustomerNotAuthenticatedError,
+  type CustomerSession,
+} from './http/customer-auth.js';
+export {
+  CustomerSessions,
+  InvalidCredentialsError,
+  InvalidRefreshTokenError,
+  type CustomerTokens,
+} from './application/customers/customer-sessions.js';
+export {
+  CUSTOMER_ACCESS_TOKENS,
+  REFRESH_TOKEN_REPOSITORY,
+  type CustomerAccessTokenPort,
+  type RefreshTokenRepositoryPort,
+} from './application/customers/session-ports.js';

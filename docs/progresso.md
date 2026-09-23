@@ -8,7 +8,7 @@
 - **Marco atual:** 1.1 — Identidade (em andamento)
 - **Branch de trabalho:** `fase-1/m11-identidade` (empilhada sobre `fase-1/m10-tenancy-de-produto`: os PRs #1–#6
   ainda não entraram na `main`)
-- **Próxima story:** US-011 (login, refresh e logout do comprador) → US-012 → US-014
+- **Próxima story:** US-012 (recuperação de senha) → US-014
 - **Última atualização:** 2026-09-23
 
 ## Checkpoints da Fase 0
@@ -33,6 +33,11 @@ mas a US-012 (derrubar sessões) e a US-014 (comprador logado) dependem dela —
   aceite de termos com versão/data/IP, confirmação por link de 24 h (token só como SHA-256 no banco, no fragmento
   da URL), resposta genérica para e-mail existente. Telas `/conta/cadastro` e `/conta/confirmar` no storefront.
   Em desenvolvimento o e-mail "fake" é entregue no Mailpit (http://localhost:8025).
+- **US-011** — login com JWT Ed25519 de 15 min (`tid` conferido contra o host), refresh opaco de 30 dias rotativo
+  em família com detecção de reuso, bloqueio progressivo por conta, logout. Storefront com cookies `HttpOnly`,
+  `/conta/entrar`, `/conta` e renovação no middleware. No caminho: **rate limit** corrigido (limite de rota
+  contava o tenant inteiro; `X-Forwarded-For` sem checagem furava o limite por IP) e **seed** que não regravava
+  credenciais fake antigas (todo `hub.resolve` falhava em dev).
 
 ## Fase 1 — marco 1.0 (concluído — PR #6)
 - **US-085 (spike)** — Worker do edge + adapter Cloudflare for SaaS. Artefatos prontos e testados; a validação
@@ -83,9 +88,9 @@ mas a US-012 (derrubar sessões) e a US-014 (comprador logado) dependem dela —
 - **Marco 1.1 — rodar `pnpm clerk:roles`** na instância de desenvolvimento da Clerk (a sessão do agente não tem
   permissão para usar a chave). Depois, habilitar MFA (TOTP) na aplicação Plataforma e "exigir MFA" na Console
   (dashboard), e só então `PANEL_MFA_ENFORCED=true` localmente.
-- **Rate limit por IP atrás do storefront**: quem chama a API é o servidor Next, então todos os compradores
-  compartilham o IP dele. O IP real só chega com `X-Forwarded-For` + segredo do edge (usado hoje só no
-  consentimento). Ajustar o `RateLimitGuard` antes do go-live (anotado para a US-086).
+- **Chaves do access token do comprador** (`CUSTOMER_JWT_*_KEY`): sem elas, fora de produção, a API usa um par
+  efêmero e as sessões caem a cada reinício. Gerar com `node scripts/gerar-chaves-comprador.mjs` e pôr no `.env`
+  (e nas variáveis da Railway — em produção a API não sobe sem elas).
 - **Senha vazada (k-anonymity/HIBP)**: `PasswordBreachPort` existe com implementação desligada — decidir se liga.
 - **Decisão D11** (conta de comprador isolada ou única) segue aberta no checklist; implementado o padrão do ADR-013
   (isolada por tenant).

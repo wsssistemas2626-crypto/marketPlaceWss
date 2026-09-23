@@ -32,3 +32,38 @@ export type VerifyCustomerEmailRequest = z.infer<typeof verifyCustomerEmailReque
 export interface VerifyCustomerEmailResponse {
   readonly status: 'verified' | 'already_verified';
 }
+
+/** Login do comprador (US-011). */
+export const customerLoginRequest = z.object({
+  email: z.string().max(320),
+  password: z.string().max(256),
+});
+
+export type CustomerLoginRequest = z.infer<typeof customerLoginRequest>;
+
+export const customerRefreshRequest = z.object({
+  refreshToken: z.string().max(256),
+});
+
+export type CustomerRefreshRequest = z.infer<typeof customerRefreshRequest>;
+
+/**
+ * Par de tokens. Quem guarda é o servidor do storefront, em cookies
+ * `HttpOnly; Secure; SameSite=Lax` (RNF-SEG-01) — o navegador nunca vê o token.
+ */
+export interface CustomerTokensResponse {
+  readonly accessToken: string;
+  /** ISO 8601. */
+  readonly accessTokenExpiresAt: string;
+  readonly refreshToken: string;
+  readonly refreshTokenExpiresAt: string;
+}
+
+/** `GET /v1/store/customers/me` — só o próprio comprador. */
+export interface CustomerProfileResponse {
+  readonly id: string;
+  readonly name: string;
+  readonly email: string;
+  readonly status: 'pending_verification' | 'active' | 'blocked' | 'anonymized';
+  readonly emailVerified: boolean;
+}

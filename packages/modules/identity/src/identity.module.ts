@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import {
   Global,
   Logger,
@@ -30,9 +32,23 @@ import {
   type PasswordBreachPort,
   type StorefrontLinksPort,
 } from './application/customers/ports.js';
+import { CustomerSessions } from './application/customers/customer-sessions.js';
 import { RegisterCustomer } from './application/customers/register-customer.js';
+import {
+  CUSTOMER_ACCESS_TOKENS,
+  CUSTOMER_CREDENTIALS,
+  REFRESH_TOKEN_REPOSITORY,
+  type CustomerAccessTokenPort,
+  type CustomerCredentialsPort,
+  type RefreshTokenRepositoryPort,
+} from './application/customers/session-ports.js';
 import { VerifyCustomerEmail } from './application/customers/verify-customer-email.js';
 import { SyncClerkWebhook } from './application/sync-clerk-webhook.js';
+import { CustomerAuthGuard } from './http/customer-auth.js';
+import {
+  CustomerAccountController,
+  CustomerSessionsController,
+} from './http/customer-sessions.controller.js';
 import { CUSTOMER_HTTP_OPTIONS, CustomersController } from './http/customers.controller.js';
 import { ClerkWebhookController } from './http/clerk-webhook.controller.js';
 import { PANEL_AUTH_POLICY, PanelAuthGuard, type PanelAuthPolicy } from './http/panel-auth.guard.js';
@@ -41,12 +57,15 @@ import { PanelAuthMiddleware } from './http/panel-auth.middleware.js';
 import {
   ConfigLegalVersions,
   HubCustomerMailer,
+  JwtCustomerAccessTokens,
+  type CustomerTokenKeys,
   NoPasswordBreachCheck,
   STOREFRONT_LINKS_OPTIONS,
   TemplateStorefrontLinks,
 } from './infrastructure/customer-adapters.js';
 import { DrizzleCustomerRepository } from './infrastructure/drizzle-customer.repository.js';
 import { DrizzleOrgLinkRepository } from './infrastructure/drizzle-org-link.repository.js';
+import { DrizzleRefreshTokenRepository } from './infrastructure/drizzle-refresh-token.repository.js';
 
 export interface IdentityModuleOptions {
   /** Adapter de identidade de painel: Clerk em produção, fake em dev/teste. */
@@ -64,13 +83,23 @@ export interface IdentityModuleOptions {
     readonly storefrontUrlTemplate: string;
     /** Segredo do edge: só com ele o `X-Forwarded-For` vale como IP do comprador. */
     readonly edgeSharedSecret?: string;
+    /** Chaves Ed25519 do access token do comprador (US-011). */
+    readonly tokenKeys: CustomerTokenKeys;
   };
 }
 
-/** Cadastro e confirmação de e-mail dos compradores (US-010). */
+/** Compradores: cadastro e confirmação (US-010), sessões e login (US-011). */
 function customerProviders(options: NonNullable<IdentityModuleOptions['customers']>): Provider[] {
   return [
-    { provide: CUSTOMER_REPOSITORY, useClass: DrizzleCustomerRepository },
+    DrizzleCustomerRepository,
+    { provide: CUSTOMER_REPOSITORY, useExisting: DrizzleCustomerRepository },
+    { provide: CUSTOMER_CREDENTIALS, useExisting: DrizzleCustomerRepository },
+    { provide: REFRESH_TOKEN_REPOSITORY, useClass: DrizzleRefreshTokenRepository },
+    {
+      provide: CUSTOMER_ACCESS_TOKENS,
+      useFactory: () => new JwtCustomerAccessTokens(options.tokenKeys, new SystemClock()),
+    },
+    { provide: APP_GUARD, useClass: CustomerAuthGuard },
     { provide: CUSTOMER_MAILER, useClass: HubCustomerMailer },
     { provide: PASSWORD_BREACH, useClass: NoPasswordBreachCheck },
     { provide: STOREFRONT_LINKS, useClass: TemplateStorefrontLinks },
@@ -109,6 +138,32 @@ function customerProviders(options: NonNullable<IdentityModuleOptions['customers
       inject: [CUSTOMER_REPOSITORY, CUSTOMER_MAILER, PASSWORD_BREACH, STOREFRONT_LINKS, LEGAL_VERSIONS],
     },
     {
+      provide: CustomerSessions,
+      useFactory: async (
+        customers: CustomerRepositoryPort,
+        credentials: CustomerCredentialsPort,
+        refreshTokens: RefreshTokenRepositoryPort,
+        accessTokens: CustomerAccessTokenPort,
+      ) => {
+        const hasher = new Argon2idPasswordHasher();
+        const logger = new Logger(CustomerSessions.name);
+        return new CustomerSessions({
+          customers,
+          credentials,
+          refreshTokens,
+          accessTokens,
+          hasher,
+          clock: new SystemClock(),
+          // senha aleatória: nunca confere, só iguala o custo do login sem conta
+          decoyPasswordHash: await hasher.hash(randomBytes(32).toString('hex')),
+          // ids, nunca e-mail: o log não carrega dado pessoal
+          onRefreshReuse: ({ customerId, familyId }) =>
+            logger.warn(`Refresh token reusado: família ${familyId} do comprador ${customerId} revogada`),
+        });
+      },
+      inject: [CUSTOMER_REPOSITORY, CUSTOMER_CREDENTIALS, REFRESH_TOKEN_REPOSITORY, CUSTOMER_ACCESS_TOKENS],
+    },
+    {
       provide: VerifyCustomerEmail,
       useFactory: (customers: CustomerRepositoryPort) =>
         new VerifyCustomerEmail(customers, new SystemClock()),
@@ -135,7 +190,9 @@ export class IdentityModule implements NestModule {
       module: IdentityModule,
       controllers: [
         ClerkWebhookController,
-        ...(options.customers === undefined ? [] : [CustomersController]),
+        ...(options.customers === undefined
+          ? []
+          : [CustomersController, CustomerSessionsController, CustomerAccountController]),
       ],
       providers: [
         { provide: WORKFORCE_IDENTITY, useValue: options.workforceIdentity },
